@@ -1,13 +1,13 @@
 # SOSVPN
-Create a VPN that tunnels over over socat which tunnels over ssh to evade firewalls
+Create a VPN that tunnels over `socat` which tunnels over `ssh` to evade extremely strict firewalls
 
 __SOSVPN__ ( or SOcatSshVPN ) is a VPN-service that has 2 features that most others lack:
-- Only extremely strict firewalls can block it.<br>The only allowed traffic needed is:
+- Only extremely strict firewalls can block it. The only allowed traffic needed is:
   - Outgoing ssh-traffic on the clientside
   - Incoming ssh-traffic on the serverside
-- Even a deep packet inspection firewall can't recognize the traffic as VPN-traffic
+- Even a deep packet inspection firewall can't recognize the traffic as VPN-traffic, it will only see ssh-packets
 
-And a couple of features (some, but not all) others have:
+And a couple of features (some, but not all) other VPN-software has:
 - Traffic from the client meant for the internal network will stay in the internal network
 - All other traffic will be sent over the VPN to the internet with the server acting as gateway
 
