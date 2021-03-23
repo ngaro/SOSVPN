@@ -27,7 +27,7 @@ Interpreted (or compiled) code will follow later._
 - Has a user named `someuser`
 - Has the ip `1.2.3.4`
 - Has a networkcard named `eths` connected to the internet
-- Has a sshserver running on `tcp/22` (this is the default ssh-port) which is reachable from the internet.<br>(It doesn't matter if everything else is blocked)
+- Has a sshserver running on `tcp/22789` which is reachable from the internet.<br>(It doesn't matter if everything else is blocked)
 - Is not yet using the virtual networkdevice `tun0` for other purposes
 - Is not yet connected to a network that overlaps the `192.168.255.0/24` range
 - Is not yet listening on `tcp/22001`
@@ -50,7 +50,7 @@ Interpreted (or compiled) code will follow later._
 - Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `sudo apt install net-tools socat ssh screen`
 ## TODO: Describe how to create/start the VPN on the client
 - Run `screen` because we'll need to run different things at the same time
-- Run `ssh -L 22002:127.0.0.1:22001 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
+- Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
   - We can now use this session to run commands on the server without having physical access.
   - The `-L` option is used for local portwarding to make sure that when the server sends traffic to itself on `TCP/22001` it will be encrypted inside ssh-packets and end up at `TCP/22002` on the client.
 - Run `screen` inside this ssh-session.<br>We now have a screen session on the client with 1 window (number `0`) and inside it a screen session on the server.<br>This also has 1 window that is numbered `0`.<br>This screen session is also needed because we run different things at the same time in the server.
