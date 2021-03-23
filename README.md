@@ -40,7 +40,7 @@ Interpreted (or compiled) code will follow later._
 - Is not yet connected to a network that overlaps the `192.168.255.0/24` range
 - Is not yet listening on `tcp/22002`
 - Uses the gateway `13.14.0.254`
-- Is on a network containing subnets `13.14.0.0/16` and `15.16.17.0/24`
+- Is on a network containing subnets `13.14.0.0/16` and `15.16.17.0/24` that has the name `mylocal.net`
 - Is using the DNS servers `15.16.17.1` and `15.16.17.2`
 
 ## Preliminary setup
@@ -81,7 +81,7 @@ sudo route add default gw 192.168.255.1 && sudo route del default gw 13.14.0.254
 ```
 ## Destroying the VPN
 The short version: Use all the steps you used to create the VPN in reverse.<br><br>The long version:
-- Attach the screen session with  `screen -r` if it's no longer on your terminal, jump to window `2` with __ctrl-a__ followed by __2__. You can reset the routing on the client here:
+- Attach the screen session with  `screen -r` if it's no longer on your terminal, jump to window `2` with __ctrl-a__ followed by __2__.<br>You can reset the routing on the client here:
 ```
 sudo route del default gw 192.168.255.1 && sudo route add default gw 13.14.0.254
 for net in 13.14.0.0/16 15.16.17.0/24 ; do sudo route del -net $net gw 13.14.0.254 ; done
@@ -97,4 +97,23 @@ sudo iptables -D FORWARD -o tun0 -i eths -j ACCEPT
 exit
 ```
 - You will now end up in window `0` of the screen-session on the server, press __ctrl-c__ here to kill socat. This will also kill the endpoint of the tunnel at the client. Now run the `exit` command a couple of times until all windows in both screen sessions are killed.
-## TODO: Describe how to setup DNS
+## Setup DNS
+You probably want your client to resolve internal names using the dnsservers on your network, and the rest of the network using external dnsservers (the ones on your server).<br>You can do this like this:
+- Install bind (`sudo apt install bind9` on debian-based systems)
+- Add the following to `/etc/bind/named.conf.local`:
+```
+zone "mylocal.net" IN {
+  type forward;
+  forwarders {
+    15.16.17.1; 15.16.17.2;
+  };
+};
+```
+- Place the following in the `options {};` section in `/etc/bind/named.conf.options`:
+```
+forwarders { 5.6.7.8; 9.10.11.12; };
+allow-recursion { 127.0.0.1; };
+querylog yes;
+```
+- Restart your local dns-server: `systemctl restart named`
+- Make sure you use `127.0.0.1` as dns-server. (The "clean" procedure differs from system to system, the "ugly" sollution of commenting everything in `/etc/resolv.conf` and adding the line `nameserver 127.0.0.1` should work everywhere)
