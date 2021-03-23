@@ -42,6 +42,10 @@ Interpreted (or compiled) code will follow later._
 - Is on a network containing subnets `13.14.0.0/16` and `15.16.17.0/24`
 - Is using the DNS servers `15.16.17.1` and `15.16.17.2`
 
+## Preliminary setup
+- Install the necessary software (`iptables`, `socat`, `ssh` and `screen`) on the server.<br>On debian-based system this can be done with: `apt install iptables socat ssh screen`
+- Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `apt install net-tools socat ssh screen`
+- Make sure the ssh server runs on the server:<br>Check `systemctl status ssh` and run `systemctl restart ssh` if you didn't see `active (running)` in the output.
 ## TODO: Describe how to create/start the VPN
 ## TODO: Describe how to stop the VPN
 ## TODO: Describe how to setup DNS
