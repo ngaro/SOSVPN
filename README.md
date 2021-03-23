@@ -19,7 +19,7 @@ This explains the name __SOcatSshVPN__.<br>
 Not only is it just as fast as regular ssh-traffic, but by using ssh-compression you can even make it faster then many other VPN's.
 
 _This is still version 0.1, here I'm only explaining how to set it up manually.
-Interpreted (or compiled) code will follow later._
+<br>Interpreted (or compiled) code will follow later._
 
 ## Example assumptions about your network setup
 (Change the settings to match your usecase)
