@@ -117,3 +117,6 @@ sudo iptables -D FORWARD -o tun0 -i eths -j ACCEPT
 exit
 ```
 - You will now end up in window `0` of the screen-session on the server, press __ctrl-c__ here to kill socat. This will also kill the endpoint of the tunnel at the client. Now run the `exit` command a couple of times until all windows in both screen sessions are killed.
+- Use your original DNS configuration again by:
+  -  Stopping bind with `systemctl stop named`
+  -  Changing your dnsservers back to `15.16.17.1` and `15.16.17.2`.<br>Again, multiple ways to do this are possible. Placing `nameserver 15.16.17.1` and `nameserver 15.16.17.2` in `/etc/resolv.conf` and commenting out the rest should work as "ugly" solution.
