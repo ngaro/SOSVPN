@@ -24,6 +24,7 @@ Interpreted (or compiled) code will follow later._
 ## Example assumptions about your network setup
 (Change the settings to match your usecase)
 ### Server
+- Has a user named `someuser`
 - Has the ip `1.2.3.4`
 - Has a networkcard named `eths` connected to the internet
 - Has a sshserver running on `tcp/22` (this is the default ssh-port) which is reachable from the internet.<br>(It doesn't matter if everything else is blocked)
@@ -43,10 +44,11 @@ Interpreted (or compiled) code will follow later._
 - Is using the DNS servers `15.16.17.1` and `15.16.17.2`
 
 ## Preliminary setup
-- Install the necessary software (`iptables`, `socat`, `ssh` and `screen`) on the server.<br>On debian-based system this can be done with: `apt install iptables socat ssh screen`
-- Make sure the ssh server runs on the server:<br>Check `systemctl status ssh` and run `systemctl restart ssh` if you didn't see `active (running)` in the output.
+- Install the necessary software (`iptables`, `socat`, `ssh` and `screen`) on the server.<br>On debian-based system this can be done with: `sudo apt install iptables socat ssh screen`
+- Make sure the ssh server runs on the server:<br>Check `sudo systemctl status ssh` and run `sudo systemctl restart ssh` if you didn't see `active (running)` in the output.
 <br><br>_From now on you never need physical access to the server anymore._<br><br>
-- Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `apt install net-tools socat ssh screen`
-## TODO: Describe how to create/start the VPN
+- Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `sudo apt install net-tools socat ssh screen`
+## TODO: Describe how to create/start the VPN on the client
+- Run `screen` because we'll need to run different things at the same time
 ## TODO: Describe how to stop the VPN
 ## TODO: Describe how to setup DNS
