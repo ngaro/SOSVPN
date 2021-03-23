@@ -81,12 +81,20 @@ sudo route add default gw 192.168.255.1 && sudo route del default gw 13.14.0.254
 ```
 ## Destroying the VPN
 The short version: Use all the steps you used to create the VPN in reverse.<br><br>The long version:
-- Attach the screen session with  `screen -r` if it's no longer on your terminal, jump to window `2` with __ctrl-a__ followed by __2__ and run:
+- Attach the screen session with  `screen -r` if it's no longer on your terminal, jump to window `2` with __ctrl-a__ followed by __2__. You can reset the routing on the client here:
 ```
-#Everything to set the routing back to the original values:
 sudo route del default gw 192.168.255.1 && sudo route add default gw 13.14.0.254
 for net in 13.14.0.0/16 15.16.17.0/24 ; do sudo route del -net $net gw 13.14.0.254 ; done
 sudo route del 13.14.0.254 dev ethc
 sudo route del 1.2.3.4 gw 13.14.0.254
+exit
 ```
+- Jump to window `0` with __ctrl-a__ followed by __0__ where the screen session in the ssh-session is running.<br>Now jump now to window `1` in this screen session with __ctrl-a__ followed by __a__ followed by __1__ and reset `iptables` here:
+```
+sudo iptables -t nat -D POSTROUTING -s 192.168.255.0/24 -j MASQUERADE
+sudo iptables -D FORWARD -i tun0 -o eths -j ACCEPT
+sudo iptables -D FORWARD -o tun0 -i eths -j ACCEPT
+exit
+```
+- You will now end up in window `0` of the screen-session on the server, press __ctrl-c__ here to kill socat. This will also kill the endpoint of the tunnel at the client. Now run the `exit` command a couple of times until all windows in both screen sessions are killed.
 ## TODO: Describe how to setup DNS
