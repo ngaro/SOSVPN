@@ -120,3 +120,5 @@ exit
 - Use your original DNS configuration again by:
   -  Stopping bind with `systemctl stop named`
   -  Changing your dnsservers back to `15.16.17.1` and `15.16.17.2`.<br>Again, multiple ways to do this are possible. Placing `nameserver 15.16.17.1` and `nameserver 15.16.17.2` in `/etc/resolv.conf` and commenting out the rest should work as "ugly" solution.
+
+<br><br>SOSVPN is created by Nikolas Garofil and licensed under GPLv3, see the `License` file for details.
