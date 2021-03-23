@@ -54,5 +54,12 @@ Interpreted (or compiled) code will follow later._
   - We can now use this session to run commands on the server without having physical access.
   - The `-L` option is used for local portwarding to make sure that when the server sends traffic to itself on `TCP/22001` it will be encrypted inside ssh-packets and end up at `TCP/22002` on the client.
 - Run `screen` inside this ssh-session.<br>We now have a screen session on the client with 1 window (number `0`) and inside it a screen session on the server.<br>This also has 1 window that is numbered `0`.<br>This screen session is also needed because we run different things at the same time in the server.
+- Run `sudo socat -d -d TCP-LISTEN:22001,reuseaddr TUN:192.168.255.1/24,up` inside window `0` of the server on screen. The result:
+  - A virtual network device `tun0` with ip `192.168.255.1` and netmask `255.255.255.0` will be created
+  - The system will start listening to `TCP/22001` for traffic from the server itself and interpret it as traffic from a virtual network with the descriptions above.
+  - This traffic will be sent to the system over `tun0`
+  - The portforwarding means that it's actually listening to traffic sent to `TCP/22002` on the client by the client itself
+  - It works bi-directional, so traffic sent out by the system to a system on `192.168.255.0/24` will leave using `tun0`, will be packed into TCP-packets and these will be tunneled over the ssh-connection to finally end up at `TCP/22002` on the client.
+(`-d -d` is used for reasonably verbose debug info in case something goes wrong)
 ## TODO: Describe how to stop the VPN
 ## TODO: Describe how to setup DNS
