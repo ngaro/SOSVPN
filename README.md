@@ -61,5 +61,11 @@ Interpreted (or compiled) code will follow later._
   - The portforwarding means that it's actually listening to traffic sent to `TCP/22002` on the client by the client itself
   - It works bi-directional, so traffic sent out by the system to a system on `192.168.255.0/24` will leave using `tun0`, will be packed into TCP-packets and these will be tunneled over the ssh-connection to finally end up at `TCP/22002` on the client.
 (`-d -d` is used for reasonably verbose debug info in case something goes wrong)
+- Pres __ctrl-a__ followed by a __a__ and a __c__ to create another window (number `1`) in the screen session on the server.<br>We will use this to make sure that traffic from the client meant for the outside world will be passed on by the system and is NAT-ed:
+```
+sudo iptables -t nat -A POSTROUTING -s 192.168.255.0/24 -j MASQUERADE
+sudo iptables -A FORWARD -i tun0 -o eths -j ACCEPT
+sudo iptables -A FORWARD -o tun0 -i eths -j ACCEPT
+```
 ## TODO: Describe how to stop the VPN
 ## TODO: Describe how to setup DNS
