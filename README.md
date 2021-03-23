@@ -48,7 +48,7 @@ Interpreted (or compiled) code will follow later._
 - Make sure the ssh server runs on the server:<br>Check `sudo systemctl status ssh` and run `sudo systemctl restart ssh` if you didn't see `active (running)` in the output.
 <br><br>_From now on you never need physical access to the server anymore._<br><br>
 - Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `sudo apt install net-tools socat ssh screen`
-## TODO: Describe how to create/start the VPN on the client
+## Describe how to create/start the VPN on the client
 - Run `screen` because we'll need to run different things at the same time
 - Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
   - We can now use this session to run commands on the server without having physical access.
@@ -68,5 +68,16 @@ sudo iptables -A FORWARD -i tun0 -o eths -j ACCEPT
 sudo iptables -A FORWARD -o tun0 -i eths -j ACCEPT
 ```
 - Press __ctrl-a__ followed by a __c__ to create another window (number `1`) in the screen session on the client.<br>Run `sudo socat -d -d  TCP:127.0.0.1:22002 TUN:192.168.255.2/24,up` here. This will create the other endpoint of the tunnel.<br>Note that the ip is different (`192.168.255.2`) but still in the same network as the one on the server (`192.168.255.0/24`).<br>This is necessary to make sure that communication is possible.
+- Press __ctrl-a__ followed by a __c__ to create another window (number `1`) in the screen session on the client.<br>We will use this make sure traffic is routed correctly:
+```
+# Make sure that the server itself is not routed over the VPN:
+sudo route add 1.2.3.4 gw 13.14.0.254
+# Make sure that the traffic sent to the gateway is sent out using the real network device:
+sudo route add 13.14.0.254 dev ethc
+# Make sure that traffic meant for our network stays in our network:
+for net in 13.14.0.0/16 15.16.17.0/24 ; do sudo route add -net $net gw 13.14.0.254 ; done
+# Make sure that all other traffic is sent over the VPN instead of the regular network
+sudo route add default gw 192.168.255.1 && sudo route del default gw 13.14.0.254
+```
 ## TODO: Describe how to stop the VPN
 ## TODO: Describe how to setup DNS
