@@ -48,7 +48,7 @@ Interpreted (or compiled) code will follow later._
 - Make sure the ssh server runs on the server:<br>Check `sudo systemctl status ssh` and run `sudo systemctl restart ssh` if you didn't see `active (running)` in the output.
 <br><br>_From now on you never need physical access to the server anymore._<br><br>
 - Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `sudo apt install net-tools socat ssh screen`
-## Describe how to create/start the VPN on the client
+## Creating the VPN on the client
 - Run `screen` because we'll need to run different things at the same time
 - Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
   - We can now use this session to run commands on the server without having physical access.
@@ -79,5 +79,14 @@ for net in 13.14.0.0/16 15.16.17.0/24 ; do sudo route add -net $net gw 13.14.0.2
 # Make sure that all other traffic is sent over the VPN instead of the regular network
 sudo route add default gw 192.168.255.1 && sudo route del default gw 13.14.0.254
 ```
-## TODO: Describe how to stop the VPN
+## Destroying the VPN
+The short version: Use all the steps you used to create the VPN in reverse.<br><br>The long version:
+- Attach the screen session with  `screen -r` if it's no longer on your terminal, jump to window `2` with __ctrl-a__ followed by __2__ and run:
+```
+#Everything to set the routing back to the original values:
+sudo route del default gw 192.168.255.1 && sudo route add default gw 13.14.0.254
+for net in 13.14.0.0/16 15.16.17.0/24 ; do sudo route del -net $net gw 13.14.0.254 ; done
+sudo route del 13.14.0.254 dev ethc
+sudo route del 1.2.3.4 gw 13.14.0.254
+```
 ## TODO: Describe how to setup DNS
