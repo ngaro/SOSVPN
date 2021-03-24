@@ -1,7 +1,7 @@
 # SOSVPN
 Create a VPN that tunnels over `socat` which tunnels over `ssh` to evade extremely strict firewalls
 
-__THIS BRANCH CONTAINS SCRIPTS THAT DON'T WORK (YET) ! DO NOT TRY TO USE THEM !__
+# __THIS BRANCH CONTAINS SCRIPTS THAT DON'T WORK (YET) ! DO NOT TRY TO USE THEM !__
 
 __SOSVPN__ ( or SOcatSshVPN ) is a VPN-service that has 2 features that most others lack:
 - Only extremely strict firewalls can block it. The only allowed traffic needed is:
@@ -46,10 +46,7 @@ _This is still version 0.1, here I'm only explaining how to set it up manually.
 - Is using the DNS servers `15.16.17.1` and `15.16.17.2`
 
 ## Preliminary setup
-- Install the necessary software (`iptables`, `socat`, `ssh` and `screen`) on the server.<br>On debian-based system this can be done with: `sudo apt install iptables socat ssh screen`
-- Make sure the ssh server runs on the server:<br>Check `sudo systemctl status ssh` and run `sudo systemctl restart ssh` if you didn't see `active (running)` in the output.
-<br><br>_From now on you never need physical access to the server anymore._<br><br>
-- Install the necessary software (`route`, `socat`, `ssh` and `screen`) on the client.<br>On debian-based system this can be done with: `sudo apt install net-tools socat ssh screen`
+Run `sosvpn serversetup` on the server<br>(_From now on you never need physical access to the server anymore._)
 ## Creating the VPN on the client
 - Run `screen` because we'll need to run different things at the same time
 - Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:

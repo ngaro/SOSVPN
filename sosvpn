@@ -22,6 +22,7 @@ my $client = {
 
 #default settings of other things
 my $onserver = undef;	#defined when running on the server
+my $serversetup = undef;	#defined if we are still setting up the server
 
 
 #Prints errorstring passed as argument and exit with returncode 1
@@ -62,18 +63,46 @@ runasroot;
 
 delete $server->{user}; #default setting: assume the username on the server is the same as on the client
 delete $server->{sshport}; #default setting: assume the server listens on the default ssh port
-foreach(@ARGV) { if(/^server$/i) { $onserver = 1; } }	#the presence of the 'server' option determines if we are running on the server or on the client system
+foreach(@ARGV) {
+	if(/^server$/i) { $onserver = 1; } #the presence of the 'server' option determines if we are running on the server or on the client system
+	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; } #the presence of the 'serversetup' option determines if we are still setting up the server locally
+}
 #Check if all software is installed and search the locations
 my $ssh = searchlocation "ssh"; unless(defined $ssh) { error "'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"; }
 my $screen = searchlocation "screen"; unless(defined $screen) { error "'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"; }
 my $socat = searchlocation "socat"; unless(defined $socat) { error "'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"; }
+my $iptables; my $systemctl; my $journalctl; my $route;
 if(defined $onserver) {
-	my $iptables = searchlocation "iptables"; unless(defined $iptables) { error "'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"; }
-	my $systemctl = searchlocation "systemctl"; unless(defined $systemctl) { error "systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."; }
-	my $journalctl = searchlocation "journalctl";
+	$iptables = searchlocation "iptables"; unless(defined $iptables) { error "'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"; }
+	$systemctl = searchlocation "systemctl"; unless(defined $systemctl) { error "systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."; }
+	$journalctl = searchlocation "journalctl";
 } else {
-	my $route = searchlocation "route"; unless(defined $route) { error "'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"; }
+	$route = searchlocation "route"; unless(defined $route) { error "'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"; }
 }
+
+
+##subs below are depend on the found locations of the programs
+
+#Restarts the ssh-server if it's not running, shows on which port it's running which users are you might login as and quits the program
+sub checksshserver {
+	my $running = undef; my $outputmessage = undef;
+	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check if ssh runs
+	unless(defined $running) { system($systemctl, "start", "ssh"); sleep 5; }	#restart it when it's not running correctly
+	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check it again
+	unless(defined $running) { error "Can't start ssh correctly"; }	#die if it still fails
+	foreach(split /\n/, `$journalctl -u ssh`) { if(/server\s+listening\s+on\s+\S+\s+port\s+(\d+)/i) { $outputmessage = "The sshserver is listening on tcp/$1"; } }	#check the port
+	say "$outputmessage\nAvailable 'regular' users, make sure you can login as one of them:";
+	open(my $fh, "/etc/passwd");
+	while(<$fh>) {
+		/^(.+?):.+?:(\d+).*/; if($1 ne "nobody" and $2 >= 1000) { say "- $1"; }
+	}
+	close $fh;
+	say "- root (will probably not work, most sshservers block root-logins)";
+	exit;
+}
+
+
+if(defined $serversetup) { checksshserver; }	#Restarts the server if it's not running, shows some connection possibilities and quits the program
 
 
 #BEGIN DEBUG
