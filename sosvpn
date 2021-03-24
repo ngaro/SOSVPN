@@ -2,6 +2,7 @@
 use v5.16;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
 
+
 #settings according to the example in README.md
 my $server = {
 	user	=> "someuser",
@@ -62,11 +63,12 @@ sub changesettings {
 }
 
 
-#Change the settings to the defaults and the ones we can discover
+runasroot;
+
+
+#Change the settings to the defaults, the ones we can discover and the ones that are specified
 delete $server->{user};	#default: assume the username on the server is the same as on the client
 delete $server->{sshport}; #default: assume the server listens on the default ssh port
-
-runasroot;
 changesettings;
 
 
