@@ -61,11 +61,11 @@ sub runasroot {
 runasroot;
 
 
-delete $server->{user}; #default setting: assume the username on the server is the same as on the client
-delete $server->{sshport}; #default setting: assume the server listens on the default ssh port
+delete $server->{user};	#default setting: assume the username on the server is the same as on the client
+delete $server->{sshport};	#default setting: assume the server listens on the default ssh port
 foreach(@ARGV) {
-	if(/^server$/i) { $onserver = 1; } #the presence of the 'server' option determines if we are running on the server or on the client system
-	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; } #the presence of the 'serversetup' option determines if we are still setting up the server locally
+	if(/^server$/i) { $onserver = 1; }	#the presence of the 'server' option determines if we are running on the server or on the client system
+	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the 'serversetup' option determines if we are still setting up the server locally
 }
 #Check if all software is installed and search the locations
 my $ssh = searchlocation "ssh"; unless(defined $ssh) { error "'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"; }

@@ -20,9 +20,6 @@ It works by:
 This explains the name __SOcatSshVPN__.<br>
 Not only is it just as fast as regular ssh-traffic, but by using ssh-compression you can even make it faster then many other VPN's.
 
-_This is still version 0.1, here I'm only explaining how to set it up manually.
-<br>Interpreted (or compiled) code will follow later._
-
 ## Example assumptions about your network setup
 (Change the settings to match your usecase)
 ### Server
@@ -47,6 +44,7 @@ _This is still version 0.1, here I'm only explaining how to set it up manually.
 
 ## Preliminary setup
 Run `sosvpn serversetup` on the server<br>(_From now on you never need physical access to the server anymore._)
+
 ## Creating the VPN on the client
 - Run `screen` because we'll need to run different things at the same time
 - Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
