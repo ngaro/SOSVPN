@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+use v5.16;
+
+#settings according to the example in README.md
+my $server = {
+	user	=> "someuser",
+	ip	=> "1.2.3.4",
+	card	=> "eths",
+	sshport	=> 22789,
+	dns	=> [ "5.6.7.8", "9.10.11.12" ]
+};
+my $client = {
+	ip	=> "13.14.15.16",
+	card	=> "ethc",
+	gateway	=> "13.14.0.254",
+	subnets	=> [ "13.14.0.0/16", "15.16.17.0/24" ],
+	dns	=> [ "15.16.17.1", "15.16.17.2"]
+};
+
+#Prints errorstring passed as argument and exit with returncode 1
+#If the string starts with a number, use this code instead and also mention the code in the output
+sub error {
+	my $error = shift;
+	my $errorcode = 1; my $errorstring = $error;
+	if($error=~/^(\d+)\s+(.*)/) { $errorcode = $1; $errorstring = $2 };
+	print STDERR "error";
+	unless($errorcode == 1) { print STDERR " (code $errorcode)"; }
+	print STDERR ": $errorstring\n";
+	exit $errorcode;
+}
+
+#Change the settings to the defaults and the ones we can discover
+delete $server->{user};	#default: assume the username on the server is the same as on the client
+delete $server->{sshport}; #default: assume the server listens on the default ssh port
+
+#BEGIN DEBUG
+use Data::Dumper;
+say Dumper($server);
+say Dumper($client);
+error "4 Example error";
