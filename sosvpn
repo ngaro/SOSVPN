@@ -18,6 +18,11 @@ my $client = {
 	dns	=> [ "15.16.17.1", "15.16.17.2"]
 };
 
+
+#default settings of other things
+my $onserver = undef;	#defined when running on the server
+
+
 #Prints errorstring passed as argument and exit with returncode 1
 #If the string starts with a number, use this code instead and also mention the code in the output
 sub error {
@@ -50,11 +55,30 @@ sub runasroot {
 	}
 }
 
+sub changesettings {
+	foreach(@ARGV) {
+		if(/^server$/i) { $onserver = 1; }
+	}
+}
+
+
 #Change the settings to the defaults and the ones we can discover
 delete $server->{user};	#default: assume the username on the server is the same as on the client
 delete $server->{sshport}; #default: assume the server listens on the default ssh port
 
 runasroot;
+changesettings;
+
+
+my $ssh = searchlocation "ssh"; unless(defined $ssh) { error "'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"; }
+my $screen = searchlocation "screen"; unless(defined $screen) { error "'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"; }
+my $socat = searchlocation "socat"; unless(defined $socat) { error "'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"; }
+if(defined $onserver) {
+	my $iptables = searchlocation "iptables"; unless(defined $iptables) { error "'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"; }
+} else {
+	my $route = searchlocation "route"; unless(defined $route) { error "'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"; }
+}
+
 
 #BEGIN DEBUG
 use Data::Dumper;
