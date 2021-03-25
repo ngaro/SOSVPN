@@ -34,20 +34,8 @@ my $debuglevel = 0;
 
 
 ### Main part of the program
-if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --serversetup or --server. When running on the client you need (at least) the server to connect to"); }
 runasroot();
-my $finalargument = pop(@ARGV);
-while($#ARGV>=0) {
-	$_ = shift @ARGV;
-	if(/^-p$/i or /^--port$/i) {
-		if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p'"); }
-		$server->{sshport} = shift @ARGV;
-	}
-	elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
-	elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
-	elsif(/^--serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the '--serversetup' option determines if we are still setting up the server locally
-	else { error("'$_' is not a valid option"); }
-}
+parseargs();
 #Check if all software is installed and search the locations
 my $ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
 my $screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
@@ -64,6 +52,23 @@ if(defined $serversetup) { checksshserver(); }	#Restarts the server if it's not 
 
 
 ### Subroutine definitions
+
+#Check if necessary args are given and use them to change the settings
+sub parseargs {
+	if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --serversetup or --server. When running on the client you need (at least) the server to connect to"); }
+	my $finalargument = pop(@ARGV);
+	while($#ARGV>=0) {
+		$_ = shift @ARGV;
+		if(/^-p$/i or /^--port$/i) {
+			if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p'"); }
+			$server->{sshport} = shift @ARGV;
+		}
+		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
+		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
+		elsif(/^--serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the '--serversetup' option determines if we are still setting up the server locally
+		else { error("'$_' is not a valid option"); }
+	}
+}
 
 #exec() with debugmessage
 sub debugexec {
