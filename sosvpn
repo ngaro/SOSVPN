@@ -1,9 +1,10 @@
 #!/usr/bin/perl
-use v5.16;
+use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
 
 
-#settings according to the example in README.md
+### Settings according to the example in README.md ###
+#( You don't want use these but you can leave them here for documentational purposes, they are overwritten in the next step)
 my $server = {
 	user	=> "someuser",
 	ip	=> "1.2.3.4",
@@ -19,6 +20,11 @@ my $client = {
 	dns	=> [ "15.16.17.1", "15.16.17.2"]
 };
 
+
+### Default settings ###
+$server = {}; $client = {};	#cleanup example settings
+$server->{sshport} = 22;	#default ssh port
+$server->{dns} = [ "8.8.4.4", "8.8.8.8" ];	#google dnsservers, if the isp of the server blocks these, use the ones of your isp
 
 #default settings of other things
 my $onserver = undef;	#defined when running on the server
@@ -58,11 +64,8 @@ sub runasroot {
 }
 
 
-runasroot;
-
-
-delete $server->{user};	#default setting: assume the username on the server is the same as on the client
-delete $server->{sshport};	#default setting: assume the server listens on the default ssh port
+### Main part of the program
+runasroot();
 foreach(@ARGV) {
 	if(/^server$/i) { $onserver = 1; }	#the presence of the 'server' option determines if we are running on the server or on the client system
 	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the 'serversetup' option determines if we are still setting up the server locally
@@ -81,7 +84,7 @@ if(defined $onserver) {
 }
 
 
-##subs below are depend on the found locations of the programs
+### Subroutine definitions
 
 #Restarts the ssh-server if it's not running, shows on which port it's running which users are you might login as and quits the program
 sub checksshserver {
