@@ -43,16 +43,6 @@ sub error {
 	exit $errorcode;
 }
 
-#use $PATH to find the location of a program passed as argument
-sub searchlocation {
-	my $program = shift;
-	foreach(split /:/, $ENV{PATH} ) {
-		my $test = "$_/$program";
-		if(-f $test and -x $test) { return $test; }
-	}
-	return undef;
-}
-
 
 ### Main part of the program
 runasroot();
@@ -65,17 +55,18 @@ while($#ARGV>=0) {
 	if(/^server$/i) { $onserver = 1; }	#the presence of the 'server' option determines if we are running on the server or on the client system
 	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the 'serversetup' option determines if we are still setting up the server locally
 }
+exit;
 #Check if all software is installed and search the locations
-my $ssh = searchlocation "ssh"; unless(defined $ssh) { error "'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"; }
-my $screen = searchlocation "screen"; unless(defined $screen) { error "'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"; }
-my $socat = searchlocation "socat"; unless(defined $socat) { error "'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"; }
+my $ssh = searchlocation("ssh"); unless(defined $ssh) { error "'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"; }
+my $screen = searchlocation("screen"); unless(defined $screen) { error "'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"; }
+my $socat = searchlocation("socat"); unless(defined $socat) { error "'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"; }
 my $iptables; my $systemctl; my $journalctl; my $route;
 if(defined $onserver) {
-	$iptables = searchlocation "iptables"; unless(defined $iptables) { error "'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"; }
-	$systemctl = searchlocation "systemctl"; unless(defined $systemctl) { error "systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."; }
-	$journalctl = searchlocation "journalctl";
+	$iptables = searchlocation("iptables"); unless(defined $iptables) { error "'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"; }
+	$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { error "systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."; }
+	$journalctl = searchlocation("journalctl");
 } else {
-	$route = searchlocation "route"; unless(defined $route) { error "'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"; }
+	$route = searchlocation("route"); unless(defined $route) { error "'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"; }
 }
 
 
@@ -85,10 +76,20 @@ if(defined $onserver) {
 sub runasroot {
 	unless($< == 0) {
 		say STDERR "You need to be root to run this script. I'll change the user for you.";
-		my $sudo = searchlocation "sudo";
+		my $sudo = searchlocation("sudo");
 		if(not defined $sudo) { error "'sudo' is not available. you'll have to find another way to become root and run this script."; }
 		exec($sudo, "$RealBin/$RealScript", @ARGV);
 	}
+}
+
+#use $PATH to find the location of a program passed as argument
+sub searchlocation {
+	my $program = shift;
+	foreach(split /:/, $ENV{PATH} ) {
+		my $test = "$_/$program";
+		if(-f $test and -x $test) { return $test; }
+	}
+	return undef;
 }
 
 #Restarts the ssh-server if it's not running, shows on which port it's running which users are you might login as and quits the program
