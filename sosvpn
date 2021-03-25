@@ -53,16 +53,6 @@ sub searchlocation {
 	return undef;
 }
 
-#Restart the program as root if you are not root yet
-sub runasroot {
-	unless($< == 0) {
-		say STDERR "You need to be root to run this script. I'll change the user for you.";
-		my $sudo = searchlocation "sudo";
-		if(not defined $sudo) { error "'sudo' is not available. you'll have to find another way to become root and run this script."; }
-		exec($sudo, "$RealBin/$RealScript", @ARGV);
-	}
-}
-
 
 ### Main part of the program
 runasroot();
@@ -85,6 +75,16 @@ if(defined $onserver) {
 
 
 ### Subroutine definitions
+
+#Restart the program as root if you are not root yet
+sub runasroot {
+	unless($< == 0) {
+		say STDERR "You need to be root to run this script. I'll change the user for you.";
+		my $sudo = searchlocation "sudo";
+		if(not defined $sudo) { error "'sudo' is not available. you'll have to find another way to become root and run this script."; }
+		exec($sudo, "$RealBin/$RealScript", @ARGV);
+	}
+}
 
 #Restarts the ssh-server if it's not running, shows on which port it's running which users are you might login as and quits the program
 sub checksshserver {
