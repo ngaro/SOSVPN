@@ -36,6 +36,7 @@ my $debuglevel = 0;
 ### Main part of the program
 runasroot();
 parseargs();
+showsettings();
 #Check if all software is installed and search the locations
 my $ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
 my $screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
@@ -75,6 +76,9 @@ sub parseargs {
 		if(not defined $finalargument) { error("No host is given to connect to"); }
 		if($finalargument =~ /(.+)@(.+)/) { $server->{user} = $1; $server->{ip} = $2; } else { $server->{ip} = $finalargument; }
 	}
+}
+
+sub showsettings {
 	if(defined $onserver) { debug(3, "Running as server"); } else { debug(3, "Running as client"); }
 	if(defined $serversetup) { debug(3, "Running as a serversetup"); }
 	debug(3, "Debuglevel: $debuglevel");
