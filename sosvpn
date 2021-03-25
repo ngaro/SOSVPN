@@ -56,7 +56,12 @@ sub searchlocation {
 
 ### Main part of the program
 runasroot();
-foreach(@ARGV) {
+while(@ARGV > 0) {
+	shift @ARGV;
+	if(/^-p$/i or /^--port$/i) {
+		if(@ARGV == 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 $ARGV[0] > 65535) { error "No valid portnumber has been given to '-p'"; }
+		$server->{sshport} = shift @ARGV;
+	}
 	if(/^server$/i) { $onserver = 1; }	#the presence of the 'server' option determines if we are running on the server or on the client system
 	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the 'serversetup' option determines if we are still setting up the server locally
 }
