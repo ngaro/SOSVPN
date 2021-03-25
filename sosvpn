@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
+use Data::Dumper; #For debugging
 
 
 ### Settings according to the example in README.md ###
@@ -55,10 +56,10 @@ if(defined $onserver) {
 } else {
 	$route = searchlocation("route"); unless(defined $route) { error("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
 }
+if(defined $serversetup) { checksshserver(); }	#Restarts the server if it's not running, shows some connection possibilities and quits the program
 
 
 ### Subroutine definitions
-
 #Restart the program as root if you are not root yet
 sub runasroot {
 	unless($< == 0) {
@@ -97,7 +98,7 @@ sub checksshserver {
 	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check if ssh runs
 	unless(defined $running) { system($systemctl, "start", "ssh"); sleep 5; }	#restart it when it's not running correctly
 	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check it again
-	unless(defined $running) { error "Can't start ssh correctly"; }	#die if it still fails
+	unless(defined $running) { error("Can't start ssh correctly"); }	#die if it still fails
 	foreach(split /\n/, `$journalctl -u ssh`) { if(/server\s+listening\s+on\s+\S+\s+port\s+(\d+)/i) { $outputmessage = "The sshserver is listening on tcp/$1"; } }	#check the port
 	say "$outputmessage\nAvailable 'regular' users, make sure you can login as one of them:";
 	open(my $fh, "/etc/passwd");
@@ -108,13 +109,3 @@ sub checksshserver {
 	say "- root (will probably not work, most sshservers block root-logins)";
 	exit;
 }
-
-
-if(defined $serversetup) { checksshserver; }	#Restarts the server if it's not running, shows some connection possibilities and quits the program
-
-
-#BEGIN DEBUG
-use Data::Dumper;
-say Dumper($server);
-say Dumper($client);
-error "4 Example error";
