@@ -30,6 +30,7 @@ $server->{dns} = [ "8.8.4.4", "8.8.8.8" ];	#google dnsservers, if the isp of the
 #default settings of other things
 my $onserver = undef;	#defined when running on the server
 my $serversetup = undef;	#defined if we are still setting up the server
+my $debug = 2;
 
 
 ### Main part of the program
@@ -43,7 +44,6 @@ while($#ARGV>=0) {
 	if(/^server$/i) { $onserver = 1; }	#the presence of the 'server' option determines if we are running on the server or on the client system
 	if(/^serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the 'serversetup' option determines if we are still setting up the server locally
 }
-exit;
 #Check if all software is installed and search the locations
 my $ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
 my $screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
@@ -63,7 +63,7 @@ if(defined $serversetup) { checksshserver(); }	#Restarts the server if it's not 
 #Restart the program as root if you are not root yet
 sub runasroot {
 	unless($< == 0) {
-		say STDERR "You need to be root to run this script. I'll change the user for you.";
+		if($debug > 0) { say STDERR "You need to be root to run this script. I'll change the user for you."; }
 		my $sudo = searchlocation("sudo");
 		if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
 		exec($sudo, "$RealBin/$RealScript", @ARGV);
@@ -87,7 +87,10 @@ sub searchlocation {
 	my $program = shift;
 	foreach(split /:/, $ENV{PATH} ) {
 		my $test = "$_/$program";
-		if(-f $test and -x $test) { return $test; }
+		if(-f $test and -x $test) {
+			if($debug > 1) { say STDERR "'$program' found at '$test'"; }
+			return $test;
+		}
 	}
 	return undef;
 }
@@ -96,12 +99,21 @@ sub searchlocation {
 sub checksshserver {
 	my $running = undef; my $outputmessage = undef;
 	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check if ssh runs
-	unless(defined $running) { system($systemctl, "start", "ssh"); sleep 5; }	#restart it when it's not running correctly
-	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check it again
-	unless(defined $running) { error("Can't start ssh correctly"); }	#die if it still fails
+	if(defined $running) {
+		if($debug > 1) { say STDERR "ssh-server is running correctly."; }
+	} else {
+		if($debug > 0) { say STDERR "ssh-server is not running (correctly). I'll restart it."; }
+		system($systemctl, "start", "ssh"); sleep 5;	#restart it when it's not running correctly (and give it 5 seconds to start)
+		foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check it again
+		if(defined $running) {
+			if($debug > 1) { say STDERR "ssh-server started correctly."; }
+		} else {
+			error("I Can't start ssh correctly"); #die if it still fails
+		}
+	}
 	foreach(split /\n/, `$journalctl -u ssh`) { if(/server\s+listening\s+on\s+\S+\s+port\s+(\d+)/i) { $outputmessage = "The sshserver is listening on tcp/$1"; } }	#check the port
 	say "$outputmessage\nAvailable 'regular' users, make sure you can login as one of them:";
-	open(my $fh, "/etc/passwd");
+	open(my $fh, "/etc/passwd") or error("I can't read '/etc/passwd' this is needed to find available users.\nThe rest of the setup is done so if you know which username(s) you can use this isn't a problem");
 	while(<$fh>) {
 		/^(.+?):.+?:(\d+).*/; if($1 ne "nobody" and $2 >= 1000) { say "- $1"; }
 	}
