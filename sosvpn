@@ -83,6 +83,14 @@ sub debugbackticks {
 	debug(2, "Now starting child '$command' and i will be using it's output. I'll tell you the returncode when it's finished.");
 	my $commandoutput = `$command`;
 	debug(1, "'$command' was started and it finished with returncode '$?'");
+	if($debuglevel >= 3) {
+		debug(3, "This was it's output:");
+		debug(3, "--- BEGIN OUTPUT '$command' ---");
+		foreach(split(/\n/, $commandoutput)) {
+			debug(3, "$_");
+		}
+		debug(3, "--- END OUTPUT '$command' ---");
+	}
 	return $commandoutput;
 }
 
