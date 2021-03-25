@@ -56,10 +56,10 @@ sub searchlocation {
 
 ### Main part of the program
 runasroot();
-while(@ARGV > 0) {
-	shift @ARGV;
+while($#ARGV>=0) {
+	$_ = shift @ARGV;
 	if(/^-p$/i or /^--port$/i) {
-		if(@ARGV == 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 $ARGV[0] > 65535) { error "No valid portnumber has been given to '-p'"; }
+		if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p'"); }
 		$server->{sshport} = shift @ARGV;
 	}
 	if(/^server$/i) { $onserver = 1; }	#the presence of the 'server' option determines if we are running on the server or on the client system
