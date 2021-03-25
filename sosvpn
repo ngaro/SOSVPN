@@ -72,9 +72,18 @@ sub debugexec {
 #system() with debugmessage
 sub debugsystem {
 	my $command = join(" ", @_);
-	debug(2, "Now starting child '$command'. I'll tell you the returncode when it's finished.");
+	debug(2, "Now starting child '$command', i won't be using the output. I'll tell you the returncode when it's finished.");
 	my $returncode = system(@_);
-	debug(1, "'$command' was started and it now finished with returncode '$returncode'");
+	debug(1, "'$command' was started and it finished with returncode '$returncode'");
+}
+
+#Same as `` but with debugmessage
+sub debugbackticks {
+	my $command = shift;
+	debug(2, "Now starting child '$command' and i will be using it's output. I'll tell you the returncode when it's finished.");
+	my $commandoutput = `$command`;
+	debug(1, "'$command' was started and it finished with returncode '$?'");
+	return $commandoutput;
 }
 
 #Restart the program as root if you are not root yet
@@ -116,20 +125,20 @@ sub searchlocation {
 #Restarts the ssh-server if it's not running, shows on which port it's running which users are you might login as and quits the program
 sub checksshserver {
 	my $running = undef; my $outputmessage = undef;
-	foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check if ssh runs
+	foreach(split /\n/, debugbackticks("$systemctl status ssh")) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check if ssh runs
 	if(defined $running) {
 		debug(2, "ssh-server is running correctly.");
 	} else {
 		debug(1, "ssh-server is not running (correctly). I'll restart it.");
 		debugsystem($systemctl, "start", "ssh"); sleep 5;	#restart it when it's not running correctly (and give it 5 seconds to start)
-		foreach(split /\n/, `$systemctl status ssh`) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check it again
+		foreach(split /\n/, debugbackticks("$systemctl status ssh")) { if(/^\s*active:\s*active\s*\(\s*running\s*\)/i) { $running = 1; } }	#check it again
 		if(defined $running) {
 			debug(2, "ssh-server started correctly.");
 		} else {
 			error("I Can't start ssh correctly"); #die if it still fails
 		}
 	}
-	foreach(split /\n/, `$journalctl -u ssh`) { if(/server\s+listening\s+on\s+\S+\s+port\s+(\d+)/i) { $outputmessage = "The sshserver is listening on tcp/$1"; } }	#check the port
+	foreach(split /\n/, debugbackticks("$journalctl -u ssh")) { if(/server\s+listening\s+on\s+\S+\s+port\s+(\d+)/i) { $outputmessage = "The sshserver is listening on tcp/$1"; } }	#check the port
 	say "$outputmessage\nAvailable 'regular' users, make sure you can login as one of them:";
 	open(my $fh, "/etc/passwd") or error("I can't read '/etc/passwd' this is needed to find available users.\nThe rest of the setup is done so if you know which username(s) you can use this isn't a problem");
 	while(<$fh>) {
