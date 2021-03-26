@@ -36,22 +36,25 @@ my $debuglevel = 0;
 runasroot();
 parseargs();
 showsettings();
-#Check if all software is installed and search the locations
-my $ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
-my $screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
-my $socat = searchlocation("socat"); unless(defined $socat) { error("'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"); }
-my $iptables; my $systemctl; my $journalctl; my $route;
-if(defined $onserver) {
-	$iptables = searchlocation("iptables"); unless(defined $iptables) { error("'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"); }
-	$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { error("systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."); }
-	$journalctl = searchlocation("journalctl");
-} else {
-	$route = searchlocation("route"); unless(defined $route) { error("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
-}
+my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route); findprograms();
 if(defined $checkssh) { checksshserver(); }	#Restarts the sshserver if it's not running, shows some connection possibilities and quits the program
 
 
 ### Subroutine definitions
+
+#Find locations of all needed programs
+sub findprograms {
+	$ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
+	$screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
+	$socat = searchlocation("socat"); unless(defined $socat) { error("'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"); }
+	if(defined $onserver) {
+		$iptables = searchlocation("iptables"); unless(defined $iptables) { error("'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"); }
+		$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { error("systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."); }
+		$journalctl = searchlocation("journalctl");
+	} else {
+		$route = searchlocation("route"); unless(defined $route) { error("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
+	}
+}
 
 #Check if necessary args are given and use them to change the settings
 sub parseargs {
