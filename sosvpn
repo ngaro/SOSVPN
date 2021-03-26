@@ -77,6 +77,17 @@ sub parseargs {
 			unless($card =~ /^\w+$/) { error("No valid networkcard has been given"); }
 			if($_ eq "-c" or /^--server-card$/) { $server->{card} = $card } else { $client->{card} = $card }
 		}
+		elsif(/^-g$/i) {
+			if($#ARGV < 0 or not $ARGV[0] =~ /^[\d\.]+$/) { error("No gateway has been given"); }
+			$client->{gateway} = shift @ARGV;
+		}
+		elsif(/^-n$/i or /^--subnets$/i) {
+			if($#ARGV < 0) { error("No subnets given"); }
+			my $subnets = shift @ARGV;
+			unless($subnets =~ /^[\d\.\/,]+$/) { error("Incorrect format for the subnets, provide them as subnets seperated by commas. Example: 13.14.0.0/16,15.16.17.0/24"); }
+			my @subnets = split(/,/, $subnets);
+			$client->{subnets} = \@subnets;
+		}
 		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
 		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
 		elsif(/^--serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the '--serversetup' option determines if we are still setting up the server locally
