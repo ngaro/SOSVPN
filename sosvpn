@@ -38,6 +38,7 @@ runasroot();
 parseargs();
 showsettings();
 my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route); findprograms();
+examinesystem();
 if(defined $checkssh) { checksshserver(); }	#Restarts the sshserver if it's not running, shows some connection possibilities and quits the program
 if(defined $onserver) {
 	servercode();
@@ -59,6 +60,14 @@ sub servercode {
 #Everything the code does when running as a client
 sub clientcode {
 	#TODO
+}
+
+#Complete info in $client and $server by examining the settings
+sub examinesystem {
+	if(defined $onserver) {
+	} else {
+		if(not defined $server->{user}) { if(defined $originaluser) { $server->{user} = $originaluser; } else { $server->{user} = getpwuid(0); }  }
+	}
 }
 
 #Find locations of all needed programs
