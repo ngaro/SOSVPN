@@ -69,12 +69,15 @@ sub examinesystem {
 		if(not defined $server->{user}) {
 			if(defined $originaluser) {
 				$server->{user} = $originaluser;
+				debug(3, "There was no user on the server defined, we 'll be using the one from the client: '$server->{user}'");
 			} else {
 				my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid(0);
 				$server->{user} = $name;
+				debug(3, "There was no user on the server defined, and the client didn't tell us which user he uses (so we can't copy it) so we'll have to use '$name'");
 			}
 		}
 		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
+		## We'll search the card and dnsservers of the server later to skip a unneccessary connection
 	}
 }
 
