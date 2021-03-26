@@ -48,7 +48,7 @@ if(defined $onserver) {
 	clientcode();
 	debug(1, "Client finished");
 }
-if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high debuglevel..."); }
+if($debuglevel > 3) { problem("$debuglevel Quiting as requested because of high debuglevel..."); }
 
 
 ### Subroutine definitions
@@ -69,7 +69,7 @@ sub examinesystem {
 		if(not defined $server->{card}) { $server->{card} = searchinternetconnection()->{card}; }
 	} else {
 		if(not defined $server->{user}) { searchuser(); }
-		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
+		if(not defined $server->{host}) { problem("You didn't provide the server to connect to."); }
 		if(not defined $client->{card}) { $client->{card} = searchinternetconnection()->{card}; }
 		if(not defined $client->{gateway}) { $client->{gateway} = searchinternetconnection()->{gateway}; }
 		if(not defined $client->{dnsservers}) { $client->{dnsservers} = searchdns($client->{card})->{servers}; }
@@ -88,7 +88,7 @@ sub searchdns {
 			last;
 		}
 	}
-	if($#resolvelijnen == -1) { error("No info found about dnsservers on interface $interface"); }
+	if($#resolvelijnen == -1) { problem("No info found about dnsservers on interface $interface"); }
 	my $dnsservers = {};	#hash because we don't want double values
 	my @domains = ();
 	for(my $i=0; $i < @resolvelijnen; $i++) {
@@ -130,7 +130,7 @@ sub searchuser {
 
 #Search the card on the localsystem that is used to send traffic to the internet
 sub searchinternetconnection {
-	open(my $fh, "/proc/net/route") or error("Couldn't read '/proc/net/route' (the routingtable)");
+	open(my $fh, "/proc/net/route") or problem("Couldn't read '/proc/net/route' (the routingtable)");
 	debug(3, "Begin reading /proc/net/route until we find the default route");
 	debug(3, "This are the lines:");
 	debug(3, "--- BEGIN CONTENTS '/proc/net/route' ---");
@@ -149,7 +149,7 @@ sub searchinternetconnection {
 	}
 	close $fh;
 	debug(3, "--- END OF '/proc/net/route' REACHED ---");
-	error("Couldn't find gateway and card used for the internet connection (make sure you have a 0.0.0.0 route).");
+	problem("Couldn't find gateway and card used for the internet connection (make sure you have a 0.0.0.0 route).");
 }
 
 sub convertipformat {
@@ -161,60 +161,60 @@ sub convertipformat {
 		$newip = "$number[3].$number[2].$number[1].$number[0]";
 	} elsif($oldip =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/) {	#To hex
 		$newip = sprintf("%X%X%X%X", $4, $3, $2, $1);
-	} else { error("'$oldip' is not a ip (in a valid format)"); }
+	} else { problem("'$oldip' is not a ip (in a valid format)"); }
 	debug(3, "$oldip converted to $newip");
 	return $newip;
 }
 
 #Find locations of all needed programs
 sub findprograms {
-	$ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
-	$screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
-	$socat = searchlocation("socat"); unless(defined $socat) { error("'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"); }
-	$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { error("systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."); }
+	$ssh = searchlocation("ssh"); unless(defined $ssh) { problem("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
+	$screen = searchlocation("screen"); unless(defined $screen) { problem("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
+	$socat = searchlocation("socat"); unless(defined $socat) { problem("'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"); }
+	$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { problem("systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."); }
 	if(defined $onserver) {
-		$iptables = searchlocation("iptables"); unless(defined $iptables) { error("'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"); }
+		$iptables = searchlocation("iptables"); unless(defined $iptables) { problem("'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"); }
 		$journalctl = searchlocation("journalctl");
 	} else {
-		$route = searchlocation("route"); unless(defined $route) { error("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
+		$route = searchlocation("route"); unless(defined $route) { problem("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
 		$systemdresolve = searchlocation("systemd-resolve");
 	}
 }
 
 #Check if necessary args are given and use them to change the settings
 sub parseargs {
-	if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --server-checkssh or --server. When running on the client you need (at least) the server to connect to"); }
+	if($#ARGV == -1) { problem("No arguments given. When running on the server you need (at least) --server-checkssh or --server. When running on the client you need (at least) the server to connect to"); }
 	while($#ARGV>=0) {
 		$_ = shift @ARGV;
 		if(/^-p$/i or /^--port$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p' or '--port'"); }
+			if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { problem("No valid portnumber has been given to '-p' or '--port'"); }
 			$server->{sshport} = shift @ARGV;
 		}
 		elsif(/^-d$/i or /^--server-dns$/i or /^--client-dns$/) {	#-d is short for--server-dns, -D is short for client-dns
-			if($#ARGV < 0) { error("No DNS-servers given to one of the dns-server options"); }
+			if($#ARGV < 0) { problem("No DNS-servers given to one of the dns-server options"); }
 			my $dnsservers = shift @ARGV;
-			unless($dnsservers =~ /^[\d\.,]+$/) { error("Incorrect format for the DNS-servers, provide them as IP's seperated by commas. Example: 8.8.4.4,8.8.8.8"); }
+			unless($dnsservers =~ /^[\d\.,]+$/) { problem("Incorrect format for the DNS-servers, provide them as IP's seperated by commas. Example: 8.8.4.4,8.8.8.8"); }
 			my @dnsservers = split(/,/, $dnsservers);
 			if($_ eq "-d" or /^--server-dns$/) { $server->{dnsservers} = \@dnsservers; } else { $client->{dnsservers} = \@dnsservers; }
 		}
 		elsif(/^-c$/i or /^--server-card$/i or /^--client-card$/) {	#-c is short for--server-card, -C is short for client-card
-			if($#ARGV < 0) { error("No networkcard given to one of the networkcard options"); }
+			if($#ARGV < 0) { problem("No networkcard given to one of the networkcard options"); }
 			my $card = shift @ARGV;
-			unless($card =~ /^\w+$/) { error("No valid networkcard has been given"); }
+			unless($card =~ /^\w+$/) { problem("No valid networkcard has been given"); }
 			if($_ eq "-c" or /^--server-card$/) { $server->{card} = $card } else { $client->{card} = $card }
 		}
 		elsif(/^-g$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^[\d\.]+$/) { error("No gateway has been given"); }
+			if($#ARGV < 0 or not $ARGV[0] =~ /^[\d\.]+$/) { problem("No gateway has been given"); }
 			$client->{gateway} = shift @ARGV;
 		}
 		elsif(/^-o$/i or /^--original-user$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^\w+$/) { error("The original username has not been given"); }
+			if($#ARGV < 0 or not $ARGV[0] =~ /^\w+$/) { problem("The original username has not been given"); }
 			$originaluser = shift @ARGV;
 		}
 		elsif(/^-n$/i or /^--subnets$/i) {
-			if($#ARGV < 0) { error("No subnets given"); }
+			if($#ARGV < 0) { problem("No subnets given"); }
 			my $subnets = shift @ARGV;
-			unless($subnets =~ /^[\d\.\/,]+$/) { error("Incorrect format for the subnets, provide them as subnets seperated by commas. Example: 13.14.0.0/16,15.16.17.0/24"); }
+			unless($subnets =~ /^[\d\.\/,]+$/) { problem("Incorrect format for the subnets, provide them as subnets seperated by commas. Example: 13.14.0.0/16,15.16.17.0/24"); }
 			my @subnets = split(/,/, $subnets);
 			$client->{subnets} = \@subnets;
 		}
@@ -224,7 +224,7 @@ sub parseargs {
 		elsif($#ARGV == -1 and not defined $onserver) {
 			if(/(.+)@(.+)/) { $server->{user} = $1; $server->{host} = $2; } else { $server->{host} = $_; }
 		}
-		else { error("'$_' is not a valid option"); }
+		else { problem("'$_' is not a valid option"); }
 	}
 }
 
@@ -274,7 +274,7 @@ sub runasroot {
 		foreach(@ARGV) { if(/^-v$/i or /^--verbose$/) { $debuglevel++; } }	#this sub runs before checking the args (or we lose them and can't pass them to sudo) so we have to check for a -v here... 
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
 		my $sudo = searchlocation("sudo");
-		if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
+		if(not defined $sudo) { problem("'sudo' is not available. you'll have to find another way to become root and run this script."); }
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
 	}
@@ -282,7 +282,7 @@ sub runasroot {
 
 #Prints errorstring passed as argument and exit with returncode 1
 #If the string starts with a number, use this code instead and also mention the code in the output
-sub error {
+sub problem {
 	my $error = shift;
 	my $errorcode = 1; my $errorstring = $error;
 	if($error=~/^(\d+)\s+(.*)/) { $errorcode = $1; $errorstring = $2 };
@@ -318,12 +318,12 @@ sub checksshserver {
 		if(defined $running) {
 			debug(2, "ssh-server started correctly.");
 		} else {
-			error("I Can't start ssh correctly"); #die if it still fails
+			problem("I can't start ssh correctly"); #die if it still fails
 		}
 	}
 	foreach(split /\n/, debugbackticks("$journalctl -u ssh")) { if(/server\s+listening\s+on\s+\S+\s+port\s+(\d+)/i) { $outputmessage = "The sshserver is listening on tcp/$1"; } }	#check the port
 	say "$outputmessage\nAvailable 'regular' users, make sure you can login as one of them:";
-	open(my $fh, "/etc/passwd") or error("I can't read '/etc/passwd' this is needed to find available users.\nThe rest of the setup is done so if you know which username(s) you can use this isn't a problem");
+	open(my $fh, "/etc/passwd") or problem("I can't read '/etc/passwd' this is needed to find available users.\nThe rest of the setup is done so if you know which username(s) you can use this isn't a problem");
 	while(<$fh>) {
 		/^(.+?):.+?:(\d+).*/; if($1 ne "nobody" and $2 >= 1000) { say "- $1"; }
 	}
