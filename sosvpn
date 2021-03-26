@@ -2,6 +2,7 @@
 use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
 use Data::Dumper; #For debugging
+use Proc::Fork;
 
 
 ### Settings according to the example in README.md ###
@@ -60,8 +61,13 @@ sub servercode {
 
 #Everything the code does when running as a client
 sub clientcode {
-	#TODO
+	run_fork {
+		child { debugsystem("echo $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}"); }
+		error { problem("Can't fork client so we can't create a ssh-connection"); }
+	}
 }
+
+
 
 #Complete info in $client and $server by examining the settings, error out if we are still missing things
 sub examinesystem {
