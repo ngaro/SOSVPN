@@ -36,9 +36,9 @@ my $originaluser = undef;
 ### Main part of the program
 runasroot();
 parseargs();
-showsettings();
 my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route); findprograms();
 examinesystem();
+showsettings();
 if(defined $checkssh) { checksshserver(); }	#Restarts the sshserver if it's not running, shows some connection possibilities and quits the program
 if(defined $onserver) {
 	servercode();
@@ -66,7 +66,14 @@ sub clientcode {
 sub examinesystem {
 	if(defined $onserver) {
 	} else {
-		if(not defined $server->{user}) { if(defined $originaluser) { $server->{user} = $originaluser; } else { $server->{user} = getpwuid(0); }  }
+		if(not defined $server->{user}) {
+			if(defined $originaluser) {
+				$server->{user} = $originaluser;
+			} else {
+				my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid(0);
+				$server->{user} = $name;
+			}
+		}
 	}
 }
 
