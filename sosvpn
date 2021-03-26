@@ -37,7 +37,7 @@ my $originaluser = undef;
 ### Main part of the program
 runasroot();
 parseargs();
-my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve); findprograms();
+my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve, $sudo); findprograms();
 examinesystem();
 showsettings();
 if(defined $checkssh) { checksshserver(); }	#Restarts the sshserver if it's not running, shows some connection possibilities and quits the program
@@ -60,7 +60,7 @@ sub servercode {
 
 #Everything the code does when running as a client
 sub clientcode {
-	debugsystem("echo $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}");
+	debugsystem("echo sudo -u $originaluser $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}");
 }
 
 
@@ -272,11 +272,11 @@ sub debugbackticks {
 
 #Restart the program as root if you are not root yet
 sub runasroot {
+	$sudo = searchlocation("sudo");
+	if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
 	unless($< == 0) {
 		foreach(@ARGV) { if(/^-v$/i or /^--verbose$/) { $debuglevel++; } }	#this sub runs before checking the args (or we lose them and can't pass them to sudo) so we have to check for a -v here... 
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
-		my $sudo = searchlocation("sudo");
-		if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
 	}
