@@ -41,9 +41,6 @@ Not only is it just as fast as regular ssh-traffic, but by using ssh-compression
 - Is on a network containing subnets `13.14.0.0/16` and `15.16.17.0/24` that has the name `mylocal.net`
 - Is using the DNS servers `15.16.17.1` and `15.16.17.2`
 
-## Preliminary setup
-Run `sosvpn serversetup` on the server<br>(_From now on you never need physical access to the server anymore._)
-
 ## Creating the VPN on the client
 - Run `screen` because we'll need to run different things at the same time
 - Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
