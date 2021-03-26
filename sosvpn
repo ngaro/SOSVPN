@@ -65,6 +65,7 @@ sub clientcode {
 #Complete info in $client and $server by examining the settings, error out if we are still missing things
 sub examinesystem {
 	if(defined $onserver) {
+		$server->{card} = searchinternetconnection()->{card};
 	} else {
 		if(not defined $server->{user}) {
 			if(defined $originaluser) {
@@ -78,7 +79,47 @@ sub examinesystem {
 		}
 		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
 		## We'll search the dnsservers of the server later to skip a unneccessary connection
+		$client->{card} = searchinternetconnection()->{card};
+		$client->{gateway} = searchinternetconnection()->{gateway};
 	}
+}
+
+#Search the card on the localsystem that is used to send traffic to the internet
+sub searchinternetconnection {
+	open(my $fh, "/proc/net/route") or error("Couldn't read '/proc/net/route' (the routingtable)");
+	debug(3, "Begin reading /proc/net/route until we find the default route");
+	debug(3, "This are the lines:");
+	debug(3, "--- BEGIN CONTENTS '/proc/net/route' ---");
+	while(<$fh>) {
+		chomp $_;
+		debug(3, $_);
+		if(/^(\S+)\s+0{8}\s+([\dA-F]{8})\s+.*/) {
+			my $card = $1;
+			my $gateway = convertipformat($2);
+			close $fh;
+			debug(3, "--- STOPPED READING '/proc/net/route'  ---");
+			debug(3, "Found gateway $gateway");
+			debug(3, "Found card $card");
+			return { card => $card, gateway => $gateway};
+		}
+	}
+	close $fh;
+	debug(3, "--- END OF '/proc/net/route' REACHED ---");
+	error("Couldn't find gateway and card used for the internet connection (make sure you have a 0.0.0.0 route).");
+}
+
+sub convertipformat {
+	my $oldip = shift;
+	my $newip;
+	if($oldip =~ /^[\dA-F]{8}$/) {	#From hex
+		my @char=split(//,$oldip); my @number=();
+		for(my $i=0; $i<4; $i++) { $number[$i] = hex($char[$i*2].$char[$i*2+1]);}
+		$newip = "$number[3].$number[2].$number[1].$number[0]";
+	} elsif($oldip =~ /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/) {	#To hex
+		$newip = sprintf("%X%X%X%X", $4, $3, $2, $1);
+	} else { error("'$oldip' is not a ip (in a valid format)"); }
+	debug(3, "$oldip converted to $newip");
+	return $newip;
 }
 
 #Find locations of all needed programs
