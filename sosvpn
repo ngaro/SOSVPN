@@ -71,6 +71,12 @@ sub parseargs {
 			my @dnsservers = split(/,/, $dnsservers);
 			if($_ eq "-d" or /^--server-dns$/) { $server->{dns} = \@dnsservers; } else { $client->{dns} = \@dnsservers; }
 		}
+		elsif(/^-c$/i or /^--server-card$/i or /^--client-card$/) {	#-c is short for--server-card, -C is short for client-card
+			if($#ARGV < 0) { error("No networkcard given to one of the networkcard options"); }
+			my $card = shift @ARGV;
+			unless($card =~ /^\w+$/) { error("No valid networkcard has been given"); }
+			if($_ eq "-c" or /^--server-card$/) { $server->{card} = $card } else { $client->{card} = $card }
+		}
 		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
 		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
 		elsif(/^--serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the '--serversetup' option determines if we are still setting up the server locally
