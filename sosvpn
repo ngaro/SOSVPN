@@ -62,7 +62,7 @@ sub clientcode {
 	#TODO
 }
 
-#Complete info in $client and $server by examining the settings
+#Complete info in $client and $server by examining the settings, error out if we are still missing things
 sub examinesystem {
 	if(defined $onserver) {
 	} else {
@@ -74,6 +74,7 @@ sub examinesystem {
 				$server->{user} = $name;
 			}
 		}
+		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
 	}
 }
 
