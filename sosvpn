@@ -69,8 +69,8 @@ sub examinesystem {
 	} else {
 		if(not defined $server->{user}) { searchuser(); }
 		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
-		if(not defined $server->{card}) { $client->{card} = searchinternetconnection()->{card}; }
-		if(not defined $server->{gateway}) { $client->{gateway} = searchinternetconnection()->{gateway}; }
+		if(not defined $client->{card}) { $client->{card} = searchinternetconnection()->{card}; }
+		if(not defined $client->{gateway}) { $client->{gateway} = searchinternetconnection()->{gateway}; }
 		## We'll search the dnsservers of the server later to skip a unneccessary connection
 	}
 }
@@ -129,9 +129,9 @@ sub findprograms {
 	$ssh = searchlocation("ssh"); unless(defined $ssh) { error("'ssh' is not installed, on debian-based systems you can install it with 'apt-get install ssh'"); }
 	$screen = searchlocation("screen"); unless(defined $screen) { error("'screen' is not installed, on debian-based systems you can install it with 'apt-get install screen'"); }
 	$socat = searchlocation("socat"); unless(defined $socat) { error("'socat' is not installed, on debian-based systems you can install it with 'apt-get install socat'"); }
+	$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { error("systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."); }
 	if(defined $onserver) {
 		$iptables = searchlocation("iptables"); unless(defined $iptables) { error("'iptables' is not installed, on debian-based systems you can install it with 'apt-get install iptables'"); }
-		$systemctl = searchlocation("systemctl"); unless(defined $systemctl) { error("systemd is not installed, on debian-based systems you can install it with 'apt-get install systemd'."); }
 		$journalctl = searchlocation("journalctl");
 	} else {
 		$route = searchlocation("route"); unless(defined $route) { error("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
