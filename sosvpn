@@ -11,20 +11,21 @@ my $server = {
 	host	=> "1.2.3.4",
 	card	=> "eths",
 	sshport	=> 22789,
-	dns	=> [ "5.6.7.8", "9.10.11.12" ]
+	dnsservers	=> [ "5.6.7.8", "9.10.11.12" ]
 };
 my $client = {
 	card	=> "ethc",
 	gateway	=> "13.14.0.254",
 	subnets	=> [ "13.14.0.0/16", "15.16.17.0/24" ],
-	dns	=> [ "15.16.17.1", "15.16.17.2"]
+	dnsservers	=> [ "15.16.17.1", "15.16.17.2"],
+	domains	=> [ "mylocal.net" ]
 };
 
 
 ### Default settings ###
 $server = {}; $client = {};	#cleanup example settings
 $server->{sshport} = 22;	#default ssh port
-$server->{dns} = [ "8.8.4.4", "8.8.8.8" ];	#google dnsservers, if the isp of the server blocks these, use the ones of your isp
+$server->{dnsservers} = [ "8.8.4.4", "8.8.8.8" ];	#google dnsservers, if the isp of the server blocks these, use the ones of your isp
 
 #default settings of other things
 my $onserver = undef;	#defined when running on the server
@@ -36,7 +37,7 @@ my $originaluser = undef;
 ### Main part of the program
 runasroot();
 parseargs();
-my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route); findprograms();
+my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve); findprograms();
 examinesystem();
 showsettings();
 if(defined $checkssh) { checksshserver(); }	#Restarts the sshserver if it's not running, shows some connection possibilities and quits the program
@@ -71,8 +72,49 @@ sub examinesystem {
 		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
 		if(not defined $client->{card}) { $client->{card} = searchinternetconnection()->{card}; }
 		if(not defined $client->{gateway}) { $client->{gateway} = searchinternetconnection()->{gateway}; }
+		if(not defined $client->{dnsservers}) { $client->{dnsservers} = searchdns($client->{card})->{servers}; }
+		if(not defined $client->{domains}) { $client->{domains} = searchdns($client->{card})->{domains}; }
 		## We'll search the dnsservers of the server later to skip a unneccessary connection
 	}
+}
+
+#Find the dnsservers and domains on this system used by traffic on interface given as argument
+sub searchdns {
+	my $interface = shift;
+	my @resolvelijnen = split /\n/, debugbackticks("$systemdresolve --no-pager -i $interface --status");
+	while($#resolvelijnen > -1) {
+		$_ = shift @resolvelijnen;
+		if(/^\s*Link\s+\d+\s+\($interface\)\s*$/) {
+			last;
+		}
+	}
+	if($#resolvelijnen == -1) { error("No info found about dnsservers on interface $interface"); }
+	my $dnsservers = {};	#hash because we don't want double values
+	my @domains = ();
+	for(my $i=0; $i < @resolvelijnen; $i++) {
+		if($resolvelijnen[$i] =~ /^\s*Current DNS Server:\s+(\S+)\s*$/) { $dnsservers->{$1} = 1; }
+		if($resolvelijnen[$i] =~ /^\s*DNS Servers:\s+(\S+)\s*$/) {
+			$dnsservers->{$1} = 1;
+			for(my $j=$i+1; $j < @resolvelijnen; $j++) {
+				if($resolvelijnen[$j]=~/^\s*(\d+\.\d+\.\d+\.\d+)\s*$/) { $dnsservers->{$1} = 1; }
+			}
+		}
+		if($resolvelijnen[$i] =~ /^\s*DNS Domain:\s+(\S+)\s*$/) {
+			my $firstdomain = $1;
+			unless($firstdomain eq "~.") { push(@domains, $firstdomain); }
+			for(my $j=$i+1; $j < @resolvelijnen; $j++) {
+				if($resolvelijnen[$j]=~/^\s{20}\s*(\S+\.\S+)\s*$/) { push(@domains, $1); }	#20 because a lot of spaces are needed
+			}
+		}
+	}
+	my @dnsservers = keys %$dnsservers;
+	foreach(@dnsservers) {
+		debug(2, "Found DNS-server '$_'");
+	}
+	foreach(@domains) {
+		debug(2, "Found domain '$_'");
+	}
+	return { servers => \@dnsservers, domains => \@domains };
 }
 
 #Find the user to use to connect to the server
@@ -135,6 +177,7 @@ sub findprograms {
 		$journalctl = searchlocation("journalctl");
 	} else {
 		$route = searchlocation("route"); unless(defined $route) { error("'route' is not installed, on debian-based systems you can install it with 'apt-get install net-tools'"); }
+		$systemdresolve = searchlocation("systemd-resolve");
 	}
 }
 
@@ -152,7 +195,7 @@ sub parseargs {
 			my $dnsservers = shift @ARGV;
 			unless($dnsservers =~ /^[\d\.,]+$/) { error("Incorrect format for the DNS-servers, provide them as IP's seperated by commas. Example: 8.8.4.4,8.8.8.8"); }
 			my @dnsservers = split(/,/, $dnsservers);
-			if($_ eq "-d" or /^--server-dns$/) { $server->{dns} = \@dnsservers; } else { $client->{dns} = \@dnsservers; }
+			if($_ eq "-d" or /^--server-dns$/) { $server->{dnsservers} = \@dnsservers; } else { $client->{dnsservers} = \@dnsservers; }
 		}
 		elsif(/^-c$/i or /^--server-card$/i or /^--client-card$/) {	#-c is short for--server-card, -C is short for client-card
 			if($#ARGV < 0) { error("No networkcard given to one of the networkcard options"); }
