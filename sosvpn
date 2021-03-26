@@ -65,22 +65,24 @@ sub clientcode {
 #Complete info in $client and $server by examining the settings, error out if we are still missing things
 sub examinesystem {
 	if(defined $onserver) {
-		$server->{card} = searchinternetconnection()->{card};
+		if(not defined $server->{card}) { $server->{card} = searchinternetconnection()->{card}; }
 	} else {
-		if(not defined $server->{user}) {
-			if(defined $originaluser) {
-				$server->{user} = $originaluser;
-				debug(3, "There was no user on the server defined, we 'll be using the one from the client: '$server->{user}'");
-			} else {
-				my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid(0);
-				$server->{user} = $name;
-				debug(3, "There was no user on the server defined, and the client didn't tell us which user he uses (so we can't copy it) so we'll have to use '$name'");
-			}
-		}
+		if(not defined $server->{user}) { searchuser(); }
 		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
+		if(not defined $server->{card}) { $client->{card} = searchinternetconnection()->{card}; }
+		if(not defined $server->{gateway}) { $client->{gateway} = searchinternetconnection()->{gateway}; }
 		## We'll search the dnsservers of the server later to skip a unneccessary connection
-		$client->{card} = searchinternetconnection()->{card};
-		$client->{gateway} = searchinternetconnection()->{gateway};
+	}
+}
+
+#Find the user to use to connect to the server
+sub searchuser {
+	if(defined $originaluser) {
+		debug(3, "There was no user on the server defined, we 'll be using the one from the client: '$originaluser'");
+		$server->{user} = $originaluser;
+	} else {
+		debug(3, "There was no user on the server defined, and the client didn't tell us which user he uses (so we can't copy it) so we'll have to use 'root'");
+		$server->{user} = 'root';
 	}
 }
 
