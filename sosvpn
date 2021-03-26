@@ -14,7 +14,6 @@ my $server = {
 	dns	=> [ "5.6.7.8", "9.10.11.12" ]
 };
 my $client = {
-	host	=> "13.14.15.16",
 	card	=> "ethc",
 	gateway	=> "13.14.0.254",
 	subnets	=> [ "13.14.0.0/16", "15.16.17.0/24" ],
@@ -57,7 +56,7 @@ if(defined $serversetup) { checksshserver(); }	#Restarts the server if it's not 
 #Check if necessary args are given and use them to change the settings
 sub parseargs {
 	my $finalargument = undef;
-	if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --serversetup or --server. When running on the client you need (at least) the server to connect to"); }
+	if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --server-setup or --server. When running on the client you need (at least) the server to connect to"); }
 	while($#ARGV>=0) {
 		$_ = shift @ARGV;
 		if(/^-p$/i or /^--port$/i) {
@@ -90,7 +89,7 @@ sub parseargs {
 		}
 		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
 		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
-		elsif(/^--serversetup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the '--serversetup' option determines if we are still setting up the server locally
+		elsif(/^--server-setup$/i) { $onserver = 1; $serversetup = 1; }	#the presence of the '--server-setup' option determines if we are still setting up the server locally
 		elsif($#ARGV > -1) { error("'$_' is not a valid option"); }
 		else { $finalargument = $_ }
 	}

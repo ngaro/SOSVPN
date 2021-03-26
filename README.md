@@ -32,7 +32,6 @@ Not only is it just as fast as regular ssh-traffic, but by using ssh-compression
 - Is not yet listening on `tcp/22001`
 - Uses the DNS servers `5.6.7.8` and `9.10.11.12`
 ### Client
-- Has the ip `13.14.15.16`
 - Has a networkcard named `ethc` connected to the internet
 - Can create a ssh-connection with the server.<br>(It doesn't matter if everything else is blocked)
 - Is not yet using the virtual networkdevice `tun0` for other purposes
