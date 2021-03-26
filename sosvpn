@@ -61,8 +61,15 @@ sub parseargs {
 	while($#ARGV>=0) {
 		$_ = shift @ARGV;
 		if(/^-p$/i or /^--port$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p'"); }
+			if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p' or '--port'"); }
 			$server->{sshport} = shift @ARGV;
+		}
+		elsif(/^-d$/i or /^--server-dns$/i or /^--client-dns$/) {	#-d is short for--server-dns, -D is short for client-dns
+			if($#ARGV < 0) { error("No DNS-servers given to one of the dns-server options"); }
+			my $dnsservers = shift @ARGV;
+			unless($dnsservers =~ /^[\d\.,]+$/) { error("Incorrect format for the DNS-servers, provide them as IP's seperated by commas. Example: 8.8.4.4,8.8.8.8"); }
+			my @dnsservers = split(/,/, $dnsservers);
+			if($_ eq "-d" or /^--server-dns$/) { $server->{dns} = \@dnsservers; } else { $client->{dns} = \@dnsservers; }
 		}
 		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
 		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
