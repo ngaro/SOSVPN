@@ -77,7 +77,7 @@ sub examinesystem {
 			}
 		}
 		if(not defined $server->{host}) { error("You didn't provide the server to connect to."); }
-		## We'll search the card and dnsservers of the server later to skip a unneccessary connection
+		## We'll search the dnsservers of the server later to skip a unneccessary connection
 	}
 }
 
