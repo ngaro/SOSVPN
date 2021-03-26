@@ -178,7 +178,8 @@ sub runasroot {
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
 		my $sudo = searchlocation("sudo");
 		if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
-		debugexec($sudo, "$RealBin/$RealScript", "-o " . getpwuid($<), @ARGV);
+		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
+		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
 	}
 }
 
