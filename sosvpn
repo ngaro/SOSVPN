@@ -30,6 +30,7 @@ $server->{dns} = [ "8.8.4.4", "8.8.8.8" ];	#google dnsservers, if the isp of the
 my $onserver = undef;	#defined when running on the server
 my $checkssh = undef;	#defined if we are checking ssh the server
 my $debuglevel = 0;
+my $originaluser = undef;
 
 
 ### Main part of the program
@@ -100,6 +101,10 @@ sub parseargs {
 			if($#ARGV < 0 or not $ARGV[0] =~ /^[\d\.]+$/) { error("No gateway has been given"); }
 			$client->{gateway} = shift @ARGV;
 		}
+		elsif(/^-o$/i or /^--original-user$/i) {
+			if($#ARGV < 0 or not $ARGV[0] =~ /^\w+$/) { error("The original username has not been given"); }
+			$originaluser = shift @ARGV;
+		}
 		elsif(/^-n$/i or /^--subnets$/i) {
 			if($#ARGV < 0) { error("No subnets given"); }
 			my $subnets = shift @ARGV;
@@ -164,7 +169,7 @@ sub runasroot {
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
 		my $sudo = searchlocation("sudo");
 		if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
-		debugexec($sudo, "$RealBin/$RealScript", @ARGV);
+		debugexec($sudo, "$RealBin/$RealScript", "-o " . getpwuid($<), @ARGV);
 	}
 }
 
