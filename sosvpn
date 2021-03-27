@@ -83,6 +83,7 @@ sub clientcode {
 	debugsystem("$scp $RealBin/$RealScript $server->{user}\@$server->{host}:$serverscriptlocation");
 	createscreen($clientsession);
 	my $commandinssh = "$serverscriptlocation --server";
+	for(my $i = 0; $i < $debuglevel; $i++) { $commandinssh .= " -v"; }
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
 	my $user = startserver($clientsession, 0, $commandinssh);
 	if(defined $user) {
