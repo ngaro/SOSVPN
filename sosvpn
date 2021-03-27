@@ -23,6 +23,7 @@ my $client = {
 };
 
 my $virtnm = "24";	#Netmask of virtual network
+my $clientvirtip = "192.168.255.2";	#Ip of the tunneldevice on the client
 my $servervirtip = "192.168.255.1";	#Ip of the tunneldevice on the server
 my $clientportforward = 22002;
 my $serverportforward = 22001;
@@ -90,6 +91,8 @@ sub clientcode {
 		my $pass = readpass($user, $server->{host});
 		inputtoscreen($clientsession, 0, "$pass\n");
 	}
+	screencommand($clientsession, 0, "screen");
+	inputtoscreen($clientsession, 1, "socat -d -d TCP:127.0.0.1:$clientportforward TUN:$clientvirtip/$virtnm,up\n");
 }
 
 #return the pass read from STDIN for user arg1 on host arg2
