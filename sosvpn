@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
+use Term::ReadKey;
 use Data::Dumper; #For debugging
 
 
@@ -73,9 +74,22 @@ sub clientcode {
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
 	my $user = startserver($clientsession, 0, $commandinssh);
 	if(defined $user) {
-		debug(4, "Try to send the pass of $user");
+		my $pass = readpass($user, $server->{host});
+		inputtoscreen($clientsession, 0, "$pass\n");
 	}
+	sleep 20;
 	screencommand($clientsession, 0, "kill");
+}
+
+#return the pass read from STDIN for user arg1 on host arg2
+sub readpass {
+	my ($user, $host) = @_;
+	ReadMode("noecho");
+	printf("Password for $user at $host: ");
+	my $pass = <>;
+	chomp $pass;
+	ReadMode("restore");
+	return $pass;
 }
 
 #starts the server by running arg3 in a ssh connection with portforwarding (important later) in window (arg2) of screensession (arg1), returns user that has to sudo, undef if it's not needed
