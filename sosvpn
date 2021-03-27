@@ -21,6 +21,11 @@ my $client = {
 	domains	=> [ "mylocal.net" ]
 };
 
+my $clientportforward = 22002;
+my $serverportforward = 22001;
+my $clientsession = "sosvpn";
+my $serverscriptlocation = "/tmp/sosvpn";
+
 
 ### Default settings ###
 $server = {}; $client = {};	#cleanup example settings
@@ -55,14 +60,17 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 
 #Everything the code does when running as a server
 sub servercode {
-	#TODO
+	say "TODO";
+	exit;
 }
 
 #Run a screen in the background and control it for the clientcode
 sub clientcode {
-	debugsystem("$scp $RealBin/$RealScript $server->{user}\@$server->{host}:/tmp/sosvpn");
-	createscreen("sosvpn");
-	inputtoscreen("sosvpn", 0, "sudo -u $originaluser $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}\n");
+	debugsystem("$scp $RealBin/$RealScript $server->{user}\@$server->{host}:$serverscriptlocation");
+	createscreen($clientsession);
+	my $commandinssh = "$serverscriptlocation --server";
+	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
+	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 }
 
 #send input (arg3) to a window (arg2) of a screen session (arg1)
