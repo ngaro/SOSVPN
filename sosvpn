@@ -61,20 +61,19 @@ sub servercode {
 #Run a screen in the background and control it for the clientcode
 sub clientcode {
 	createscreen("sosvpn");
-	commandtoscreen("sosvpn", 0, "echo sudo -u $originaluser $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}");
-}
-
-#run a command (arg3) in window (arg2) of a screen session (arg1)
-sub commandtoscreen {
-	my $input = pop;
-	push(@_, "$input\n");
-	inputtoscreen(@_);
+	inputtoscreen("sosvpn", 0, "echo sudo -u $originaluser $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}\n");
 }
 
 #send input (arg3) to a window (arg2) of a screen session (arg1)
 sub inputtoscreen {
 	my ($session, $window, $input) = @_;
-	unless(debugsystem("$screen -S $session -p $window -X stuff '$input'") == 0) { error("Couldn't send '$input' to window $window of screen session '$session'"); }
+	if($input=~/\n$/) {
+		my $withoutnewline = $input; chomp $withoutnewline;
+		debug(2, "Sending '$withoutnewline' (followed by a newline) to window $window of screen session '$session'");
+	} else {
+		debug(2, "Sending '$input' (without a newline) to window $window of screen session '$session'");
+	}
+	unless(system("$screen -S $session -p $window -X stuff '$input'") == 0) { error("Couldn't send '$input' to window $window of screen session '$session'"); }
 }
 
 #create a detached screen with the sessionname in argument
