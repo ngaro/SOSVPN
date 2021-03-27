@@ -22,9 +22,12 @@ my $client = {
 	domains	=> [ "mylocal.net" ]
 };
 
+my $servervirtnm = "24";	#Netmask of virtual network
+my $servervirtip = "192.168.255.1";	#Ip of the tunneldevice on the server
 my $clientportforward = 22002;
 my $serverportforward = 22001;
 my $clientsession = "sosvpn";
+my $serversession = "sosvpnserv";
 my $serverscriptlocation = "/tmp/sosvpn";
 my $clientscreenlog = "/tmp/screenlog";
 
@@ -62,8 +65,8 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 
 #Everything the code does when running as a server
 sub servercode {
-	say "TODO";
-	exit;
+	createscreen($serversession);
+	inputtoscreen($serversession, 0, "socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$servervirtnm,up\n");
 }
 
 #Run a screen in the background and control it for the clientcode
