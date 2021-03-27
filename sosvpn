@@ -67,6 +67,7 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 sub servercode {
 	createscreen($serversession);
 	inputtoscreen($serversession, 0, "socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$servervirtnm,up\n");
+	screencommand($serversession, 0, "screen");
 }
 
 #Run a screen in the background and control it for the clientcode
