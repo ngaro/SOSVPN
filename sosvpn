@@ -53,9 +53,17 @@ showsettings();
 if(defined $checkssh) { checksshserver(); }	#Restarts the sshserver if it's not running, shows some connection possibilities and quits the program
 if(defined $onserver) {
 	servercode();
+	if($debuglevel < 4) {
+		if($debuglevel == 3) { sleep 20; }
+		screencommand($serversession, 0, "kill");
+	}
 	debug(1, "Server finished");
 } else {
 	clientcode();
+	if($debuglevel < 4) {
+		if($debuglevel == 3) { sleep 20; }
+		screencommand($clientsession, 0, "kill");
+	}
 	debug(1, "Client finished");
 }
 if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high debuglevel..."); }
@@ -81,8 +89,6 @@ sub clientcode {
 		my $pass = readpass($user, $server->{host});
 		inputtoscreen($clientsession, 0, "$pass\n");
 	}
-	sleep 20;
-	screencommand($clientsession, 0, "kill");
 }
 
 #return the pass read from STDIN for user arg1 on host arg2
