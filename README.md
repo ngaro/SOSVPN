@@ -42,8 +42,8 @@ Not only is it just as fast as regular ssh-traffic, but by using ssh-compression
 - Is using the DNS servers `15.16.17.1` and `15.16.17.2`
 
 ## Creating the VPN on the client
-- Run `screen` because we'll need to run different things at the same time
-- Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session<br>A `ssh` session will be opened in window `0` of screen:
+- Run `screen` because we'll need to run different things at the same time _(implemented, the session is named "sosvpn")_
+- Run `ssh -L 22002:127.0.0.1:22001 -p 22789 someuser@1.2.3.4` inside this screen session _(implemented)_<br>A `ssh` session will be opened in window `0` of screen:
   - We can now use this session to run commands on the server without having physical access.
   - The `-L` option is used for local portwarding to make sure that when the server sends traffic to itself on `TCP/22001` it will be encrypted inside ssh-packets and end up at `TCP/22002` on the client.
 - Run `screen` inside this ssh-session.<br>We now have a screen session on the client with 1 window (number `0`) and inside it a screen session on the server.<br>This also has 1 window that is numbered `0`.<br>This screen session is also needed because we run different things at the same time in the server.
