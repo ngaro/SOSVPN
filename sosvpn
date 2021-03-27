@@ -26,8 +26,8 @@ my $servervirtnm = "24";	#Netmask of virtual network
 my $servervirtip = "192.168.255.1";	#Ip of the tunneldevice on the server
 my $clientportforward = 22002;
 my $serverportforward = 22001;
-my $clientsession = "sosvpn";
-my $serversession = "sosvpnserv";
+my $clientsession = "sosvpnclient";
+my $serversession = "sosvpnserver";
 my $serverscriptlocation = "/tmp/sosvpn";
 my $clientscreenlog = "/tmp/screenlog";
 
