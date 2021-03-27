@@ -22,7 +22,7 @@ my $client = {
 	domains	=> [ "mylocal.net" ]
 };
 
-my $servervirtnm = "24";	#Netmask of virtual network
+my $virtnm = "24";	#Netmask of virtual network
 my $servervirtip = "192.168.255.1";	#Ip of the tunneldevice on the server
 my $clientportforward = 22002;
 my $serverportforward = 22001;
@@ -74,7 +74,7 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 #Everything the code does when running as a server
 sub servercode {
 	createscreen($serversession);
-	inputtoscreen($serversession, 0, "socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$servervirtnm,up\n");
+	inputtoscreen($serversession, 0, "socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$virtnm,up\n");
 	screencommand($serversession, 0, "screen");
 }
 
