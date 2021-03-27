@@ -58,12 +58,20 @@ sub servercode {
 	#TODO
 }
 
-#Everything the code does when running as a client
+#Run a screen in the background and control it for the clientcode
 sub clientcode {
+	createscreen("sosvpn");
 	debugsystem("echo sudo -u $originaluser $ssh -L 22002:127.0.0.1:22001 -p $server->{sshport} $server->{user}\@$server->{host}");
 }
 
-
+#create a detached screen with the sessionname in argument
+sub createscreen {
+	my $session = shift;
+	foreach(split /\n/, debugbackticks("$screen -ls")) {
+		if(/^\s*\d+\.$session\s+\(.+\)\s+\(.+\)\s*$/i) { error("Screen session '$session' already exists"); }
+	}
+	unless(debugsystem("$screen -d -m -S $session") == 0) { error("Can't create a detached screen"); }
+}
 
 #Complete info in $client and $server by examining the settings, error out if we are still missing things
 sub examinesystem {
@@ -251,6 +259,7 @@ sub debugsystem {
 	debug(2, "Now starting child '$command', i won't be using the output. I'll tell you the returncode when it's finished.");
 	my $returncode = system(@_);
 	debug(1, "'$command' was started and it finished with returncode '$returncode'");
+	return $returncode;
 }
 
 #Same as `` but with debugmessage
