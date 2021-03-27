@@ -25,6 +25,7 @@ my $clientportforward = 22002;
 my $serverportforward = 22001;
 my $clientsession = "sosvpn";
 my $serverscriptlocation = "/tmp/sosvpn";
+my $clientscreenlog = "/tmp/screenlog";
 
 
 ### Default settings ###
@@ -70,7 +71,32 @@ sub clientcode {
 	createscreen($clientsession);
 	my $commandinssh = "$serverscriptlocation --server";
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
+	screencommand($clientsession, 0, "logfile $clientscreenlog");
+	screencommand($clientsession, 0, "log on");
 	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
+	while(1) {
+		sleep 4;
+		my $lines = debugbackticks("wc -l $clientscreenlog");
+		if($lines=~/^(\d+) / and $1 > 1) { last; } else { next; }
+		error("Can't find the amount of lines in '$clientscreenlog'");
+	}
+	screencommand($clientsession, 0, "log off");
+	open(my $fh, $clientscreenlog) or error("Can't open '$clientscreenlog'");
+	my $lastline = <$fh>;
+	while(<$fh>) { $lastline=$_ }
+	close $fh;
+	unlink $clientscreenlog;
+	if($lastline=~/^\[sudo\] password for (.*):\s*$/ and $1 eq $server->{user}) {
+		debug(4, "Password wanted for $server->{user} on $server->{host}");
+	}
+	screencommand($clientsession, 0, "kill");
+}
+
+#send a command (arg3) to a screen session (arg1) while on a window (arg2). This is not meant for sending input to whatever is running in that window
+sub screencommand {
+	my ($session, $window, $command) = @_;
+	debug(2, "Sending '$command' to screen session '$session' while on window $window");
+	unless(system("$screen -S $session -p $window -X $command") == 0) { error("Couldn't send '$command' to screen session '$session' when placing it on window $window"); }
 }
 
 #send input (arg3) to a window (arg2) of a screen session (arg1)
