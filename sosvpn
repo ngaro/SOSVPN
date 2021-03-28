@@ -30,7 +30,7 @@ my $serverportforward = 22001;
 my $clientsession = "sosvpnclient";
 my $serversession = "sosvpnserver";
 my $serverscriptlocation = "/tmp/sosvpn";
-my $clientscreenlog = "/tmp/screenlog";
+my $echopassscript = "/tmp/echopass.sh";
 
 
 ### Default settings ###
@@ -87,11 +87,8 @@ sub clientcode {
 	my $commandinssh = "$serverscriptlocation --server";
 	for(my $i = 0; $i < $debuglevel; $i++) { $commandinssh .= " -v"; }
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
-	my $user = startserver($clientsession, 0, $commandinssh);
-	if(defined $user) {
-		my $pass = readpass($user, $server->{host});
-		inputtoscreen($clientsession, 0, "$pass\n");
-	}
+	sendnewpassfile($server->{user}, $server->{host});
+	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 	screencommand($clientsession, 0, "screen");
 	inputtoscreen($clientsession, 1, "socat -d -d TCP:127.0.0.1:$clientportforward TUN:$clientvirtip/$virtnm,up\n");
 	waitforendofscreen($clientsession, 10);
@@ -132,38 +129,16 @@ sub readpass {
 	return $pass;
 }
 
-#starts the server by running arg3 in a ssh connection with portforwarding (important later) in window (arg2) of screensession (arg1), returns user that has to sudo, undef if it's not needed
-sub startserver {
-	my ($session, $window, $commandinssh) = @_;
-	screencommand($session, $window, "logfile $clientscreenlog");
-	screencommand($session, $window, "log on");
-	inputtoscreen($session, $window, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
-	waitminlines($clientscreenlog, 2, 4);
-	screencommand($session, $window, "log off");
-	my $lastline = readlastline($clientscreenlog);
-	unlink $clientscreenlog;
-	if($lastline=~/^\[sudo\] password for (.*):\s*$/ and $1 eq $server->{user}) { return $server->{user}; } else { return undef; }
-}
-
-#wait until file arg1 containsa at least arg2 lines, check every arg3 seconds
-sub waitminlines {
-	my ($file, $minlines, $seconds) = @_;
-	while(1) {
-		sleep $seconds;
-		my $lines = debugbackticks("wc -l $file");
-		if($lines=~/^(\d+) / and $1 >= $minlines) { last; } else { next; }
-		error("Can't find the amount of lines in '$file'");
-	}
-}
-
-#return the last line of a file (or undef when it's empty)
-sub readlastline {
-	my $file = shift;
-	open(my $fh, $file) or error("Can't open '$file'");
-	my $lastline = <$fh>;
-	while(<$fh>) { $lastline=$_ }
+#reads a password for user arg1 on host arg2, and create a script on this host that echos it on this host. Do not forget to remove it on host after usage !
+sub sendnewpassfile {
+	my ($user, $host) = @_;
+	my $pass = readpass($user, $host);
+	open(my $fh, ">$echopassscript") or error("Can 't write to '$echopassscript'");
+	print $fh "#!/bin/sh\necho \"$pass\"";
 	close $fh;
-	return $lastline;
+	debugsystem("$scp $echopassscript $user\@$host:$echopassscript");
+	unlink $echopassscript;
+	debugsystem("$ssh $user\@$host chmod 500 $echopassscript");
 }
 
 #send a command (arg3) to a screen session (arg1) while on a window (arg2). This is not meant for sending input to whatever is running in that window
@@ -405,11 +380,18 @@ sub debugbackticks {
 sub runasroot {
 	$sudo = searchlocation("sudo");
 	if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
-	unless($< == 0) {
+	if($< == 0) {
+		if(-f $echopassscript ) { unlink $echopassscript; }
+	} else {
 		foreach(@ARGV) { if(/^-v$/i or /^--verbose$/) { $debuglevel++; } }	#this sub runs before checking the args (or we lose them and can't pass them to sudo) so we have to check for a -v here... 
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
-		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
+		my @argsaftersudo = ("$RealBin/$RealScript", "-o", $name, @ARGV);
+		if(-f $echopassscript) {
+			unshift(@argsaftersudo, "-A");
+			%ENV = ("SUDO_ASKPASS", $echopassscript);
+		}
+		debugexec($sudo, @argsaftersudo);
 	}
 }
 
@@ -417,6 +399,7 @@ sub runasroot {
 #If the string starts with a number, use this code instead and also mention the code in the output
 sub error {
 	my $error = shift;
+	if( -f $ $echopassscript) { unlink $echopassscript; }
 	my $errorcode = 1; my $errorstring = $error;
 	if($error=~/^(\d+)\s+(.*)/) { $errorcode = $1; $errorstring = $2 };
 	print STDERR "error";
