@@ -191,13 +191,15 @@ sub screencommand {
 #send input (arg3) to a window (arg2) of a screen session (arg1)
 sub inputtoscreen {
 	my ($session, $window, $input) = @_;
+	my $inputinfo = $input;
+	if($inputinfo=~/echo\s+(.+)\s*|\s*sudo/ and $debuglevel < 5) { $inputinfo=~s/echo\s+.+\s*|\s*sudo/echo ***Use debug level 5 to see this password*** | sudo/; }
 	if($input=~/\n$/) {
-		my $withoutnewline = $input; chomp $withoutnewline;
-		debug(2, "Sending '$withoutnewline' (followed by a newline) to window $window of screen session '$session'");
+		chomp $inputinfo;
+		debug(2, "Sending '$inputinfo' (followed by a newline) to window $window of screen session '$session'");
 	} else {
-		debug(2, "Sending '$input' (without a newline) to window $window of screen session '$session'");
+		debug(2, "Sending '$inputinfo' (without a newline) to window $window of screen session '$session'");
 	}
-	unless(system("$screen -S $session -p $window -X stuff '$input'") == 0) { error("Couldn't send '$input' to window $window of screen session '$session'"); }
+	unless(system("$screen -S $session -p $window -X stuff '$input'") == 0) { error("Couldn't send '$inputinfo' to window $window of screen session '$session'"); }
 }
 
 #create a detached screen with the sessionname in argument
@@ -385,6 +387,7 @@ sub showsettings {
 #system() with debugmessage
 sub debugsystem {
 	my $command = join(" ", @_);
+	if($command=~/echo\s+(.*)\s*|\s*SUDO_ASKPASS/ and $debuglevel < 5) { $command=~s/echo\s+(.*)\s*|\s*SUDO_ASKPASS/echo ***Use debug level 5 to see this password*** | SUDO_ASKPASS/; };
 	debug(2, "Now starting child '$command', i won't be using the output. I'll tell you the returncode when it's finished.");
 	my $returncode = system(@_);
 	debug(1, "'$command' was started and it finished with returncode '$returncode'");
@@ -422,7 +425,7 @@ sub runasroot {
 		my $systemline;
 		if(defined $onserver) {
 			my $pass = <STDIN>; chomp $pass;
-			debug(4, "Password of this user is |$pass|");
+			debug(5, "Password of this user is |$pass|");
 			$systemline="echo $pass | SUDO_ASKPASS='$echoscript' $sudo -A";
 		} else {
 			$systemline = $sudo;
