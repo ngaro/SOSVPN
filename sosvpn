@@ -270,7 +270,8 @@ sub searchuser {
 		$server->{user} = $originaluser;
 	} else {
 		debug(3, "There was no user on the server defined, and the client didn't tell us which user he uses (so we can't copy it) so we'll have to use 'root'");
-		$server->{user} = 'root';
+		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid(0);
+		$server->{user} = $name;
 	}
 }
 
