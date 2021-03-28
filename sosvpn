@@ -77,6 +77,7 @@ sub servercode {
 	createscreen($serversession);
 	inputtoscreen($serversession, 0, "socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$virtnm,up\n");
 	screencommand($serversession, 0, "screen");
+	waitforendofscreen($serversession, 10);
 }
 
 #Run a screen in the background and control it for the clientcode
@@ -93,6 +94,31 @@ sub clientcode {
 	}
 	screencommand($clientsession, 0, "screen");
 	inputtoscreen($clientsession, 1, "socat -d -d TCP:127.0.0.1:$clientportforward TUN:$clientvirtip/$virtnm,up\n");
+	waitforendofscreen($clientsession, 10);
+}
+
+#Check every arg2 seconds if a screen session named arg1 of the current user still exits, return when it's no longer the case
+sub waitforendofscreen {
+	my ($session, $seconds) = @_;
+	my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
+	while(1) {
+		debug(3, "Checking for end of screen session '$session'");
+		my $sessionexists = undef;
+		opendir my $screendir, "/var/run/screen/S-$name" or error("Can't open the screen directory of '$name' (/var/run/screen/S-$name) ");
+		foreach(readdir($screendir)) {
+			if(/^\d+\.$session$/) {
+				debug(3, "Screen session '$session' still exists because of file '/var/run/screen/S-$name/$_'");
+				$sessionexists = 1;
+				last;
+			}
+		}
+		closedir $screendir;
+		unless(defined $sessionexists) {
+			debug(2, "Screen session '$session' doesn't exist (anymore)");
+			return;
+		}
+		sleep $seconds;
+	}
 }
 
 #return the pass read from STDIN for user arg1 on host arg2
