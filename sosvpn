@@ -1,4 +1,11 @@
 #!/usr/bin/perl
+# TODO:
+# 	- Socat racecondition should be fixed
+#	- Server should set iptables
+#	- Client should set routing
+# 	- DNS settings should be applied
+# 	- Resetting everything back to the original should become possible
+# 	- Client should find the dnsservers of the server
 use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
 use Term::ReadKey;
@@ -222,7 +229,6 @@ sub examinesystem {
 		if(not defined $client->{gateway}) { $client->{gateway} = searchinternetconnection()->{gateway}; }
 		if(not defined $client->{dnsservers}) { $client->{dnsservers} = searchdns($client->{card})->{servers}; }
 		if(not defined $client->{domains}) { $client->{domains} = searchdns($client->{card})->{domains}; }
-		## We'll search the dnsservers of the server later to skip a unneccessary connection
 	}
 }
 
