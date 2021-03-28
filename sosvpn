@@ -30,7 +30,7 @@ my $serverportforward = 22001;
 my $clientsession = "sosvpnclient";
 my $serversession = "sosvpnserver";
 my $serverscriptlocation = "/tmp/sosvpn";
-my $echopassscript = "/tmp/echopass.sh";
+my $echoscript = "/tmp/echostdin.sh";
 
 
 ### Default settings ###
@@ -46,8 +46,9 @@ my $originaluser = undef;
 
 
 ### Main part of the program
+parsefirstargs();
 runasroot();
-parseargs();
+parseotherargs();
 my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve, $sudo, $scp); findprograms();
 examinesystem();
 showsettings();
@@ -72,6 +73,15 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 
 ### Subroutine definitions
 
+#Parse args to set vars we already need in runasroot()
+sub parsefirstargs {
+	foreach(@ARGV) {	#we need to check if we are server of client to become root properly, we alse need to check the debuglevel because we are already debugging here
+		if(/^-v$/i or /^--verbose$/) { $debuglevel++; }
+		if(/^--server$/i) { $onserver = 1; }
+		if(/^--server-checkssh$/i) { $onserver = 1; $checkssh = 1; }
+	}
+}
+
 #Everything the code does when running as a server
 sub servercode {
 	createscreen($serversession);
@@ -83,15 +93,25 @@ sub servercode {
 #Run a screen in the background and control it for the clientcode
 sub clientcode {
 	debugsystem("$scp $RealBin/$RealScript $server->{user}\@$server->{host}:$serverscriptlocation");
+	sendechoscript($server->{user}, $server->{host}, $echoscript);
 	createscreen($clientsession);
 	my $commandinssh = "$serverscriptlocation --server";
 	for(my $i = 0; $i < $debuglevel; $i++) { $commandinssh .= " -v"; }
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
-	sendnewpassfile($server->{user}, $server->{host});
-	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
+	my $pass = readpass($server->{user}, $server->{host});
+	runinscreenwithouthistory($clientsession, 0, "echo $pass | $sudo -u $originaluser $ssh -T -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 	screencommand($clientsession, 0, "screen");
 	inputtoscreen($clientsession, 1, "socat -d -d TCP:127.0.0.1:$clientportforward TUN:$clientvirtip/$virtnm,up\n");
 	waitforendofscreen($clientsession, 10);
+}
+
+#Run command arg3 (newline needed in case we want to send extra stuff) in window arg 2 of screen session arg1 and make sure it doesn't end up in the history
+sub runinscreenwithouthistory {
+	my ($session, $window, $command) = @_;
+	inputtoscreen($session, $window, "oldhistoryfile=\\\$HISTFILE\n");
+	inputtoscreen($session, $window, "HISTFILE=/dev/null\n");
+	inputtoscreen($session, $window, $command);
+	inputtoscreen($session, $window, "HISTFILE=\\\$oldhistoryfile\n");
 }
 
 #Check every arg2 seconds if a screen session named arg1 of the current user still exits, return when it's no longer the case
@@ -145,18 +165,6 @@ sub readpass {
 	}
 	ReadMode("restore");
 	return $pass;
-}
-
-#reads a password for user arg1 on host arg2, and create a script on this host that echos it on this host. Do not forget to remove it on host after usage !
-sub sendnewpassfile {
-	my ($user, $host) = @_;
-	my $pass = readpass($user, $host);
-	open(my $fh, ">$echopassscript") or error("Can 't write to '$echopassscript'");
-	print $fh "#!/bin/sh\necho \"$pass\"";
-	close $fh;
-	debugsystem("$scp $echopassscript $user\@$host:$echopassscript");
-	unlink $echopassscript;
-	debugsystem("$ssh $user\@$host chmod 500 $echopassscript");
 }
 
 #send a command (arg3) to a screen session (arg1) while on a window (arg2). This is not meant for sending input to whatever is running in that window
@@ -307,7 +315,7 @@ sub findprograms {
 }
 
 #Check if necessary args are given and use them to change the settings
-sub parseargs {
+sub parseotherargs {
 	if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --server-checkssh or --server. When running on the client you need (at least) the server to connect to"); }
 	while($#ARGV>=0) {
 		$_ = shift @ARGV;
@@ -343,9 +351,7 @@ sub parseargs {
 			my @subnets = split(/,/, $subnets);
 			$client->{subnets} = \@subnets;
 		}
-		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
-		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
-		elsif(/^--server-checkssh$/i) { $onserver = 1; $checkssh = 1; }	#the presence of the '--server-checkssh' option determines if we are still setting up the server locally
+		elsif(/^-v$/i or /^--verbose$/ or /^--server$/i or /^--server-checkssh$/) {}	#already parsed in runasroot()
 		elsif($#ARGV == -1 and not defined $onserver) {
 			if(/(.+)@(.+)/) { $server->{user} = $1; $server->{host} = $2; } else { $server->{host} = $_; }
 		}
@@ -399,25 +405,39 @@ sub runasroot {
 	$sudo = searchlocation("sudo");
 	if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
 	if($< == 0) {
-		if(-f $echopassscript ) { unlink $echopassscript; }
+		if(defined $onserver) { unlink $echoscript; }
+		debug(2, "You are now running with superuser privileges");
 	} else {
-		foreach(@ARGV) { if(/^-v$/i or /^--verbose$/) { $debuglevel++; } }	#this sub runs before checking the args (or we lose them and can't pass them to sudo) so we have to check for a -v here... 
-		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
+		debug(1, "You need to be root to run this script. I'll change the user for you.");
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		my @argsaftersudo = ("$RealBin/$RealScript", "-o", $name, @ARGV);
-		if(-f $echopassscript) {
-			unshift(@argsaftersudo, "-A");
-			%ENV = ("SUDO_ASKPASS", $echopassscript);
+		if(defined $onserver) {
+			my $pass = <STDIN>; chomp $pass;
+			debug(4, "Password of this user is |$pass|");
+			my $systemline="echo $pass | SUDO_ASKPASS='$echoscript' $sudo -A";
+			foreach(@argsaftersudo) { $systemline .= " $_"; }
+			exit debugsystem($systemline);
+		} else {
+			debugexec($sudo, @argsaftersudo);
 		}
-		debugexec($sudo, @argsaftersudo);
 	}
+}
+
+#create a script arg3 that outputs the first line of STDIN and send it to user arg1 on host arg2 (on location arg3)
+sub sendechoscript {
+	my ($user, $host, $script) = @_;
+	open(my $fh, ">$script") or error("Can 't write to '$script'");
+	print $fh "#!/bin/sh\nread toecho\necho \$toecho\n";
+	close $fh;
+	debugsystem("$scp $script $user\@$host:$script");
+	unlink $script;
+	debugsystem("$ssh $user\@$host chmod +x $script");
 }
 
 #Prints errorstring passed as argument and exit with returncode 1
 #If the string starts with a number, use this code instead and also mention the code in the output
 sub error {
 	my $error = shift;
-	if( -f $ $echopassscript) { unlink $echopassscript; }
 	my $errorcode = 1; my $errorstring = $error;
 	if($error=~/^(\d+)\s+(.*)/) { $errorcode = $1; $errorstring = $2 };
 	print STDERR "error";
