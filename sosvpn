@@ -31,6 +31,7 @@ my $clientsession = "sosvpnclient";
 my $serversession = "sosvpnserver";
 my $serverscriptlocation = "/tmp/sosvpn";
 my $echoscript = "/tmp/echostdin.sh";
+my $system = "Unknown (unknown)";
 
 
 ### Default settings ###
@@ -47,6 +48,7 @@ my $originaluser = undef;
 
 ### Main part of the program
 parsefirstargs();
+setsystemstring();
 runasroot();
 parseotherargs();
 my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve, $sudo, $scp); findprograms();
@@ -72,6 +74,18 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 
 
 ### Subroutine definitions
+
+sub setsystemstring {
+	if(defined $onserver) { $system =~ s/Unknown/Server/; } else { $system =~ s/Unknown/Client/; }
+	my $hostname = searchlocation("hostname");
+	if(defined $hostname) {
+		my $thishost = debugbackticks($hostname);
+		chomp $thishost;
+		$system =~ s/unknown/$thishost/;
+	} else {
+		debug(2, "'hostname' is not installed");
+	}
+}
 
 #Parse args to set vars we already need in runasroot()
 sub parsefirstargs {
@@ -440,9 +454,7 @@ sub error {
 	my $error = shift;
 	my $errorcode = 1; my $errorstring = $error;
 	if($error=~/^(\d+)\s+(.*)/) { $errorcode = $1; $errorstring = $2 };
-	print STDERR "error";
-	unless($errorcode == 1) { print STDERR " (code $errorcode)"; }
-	print STDERR ": $errorstring\n";
+	say STDERR "ERROR $errorcode |$system|: $errorstring";
 	exit $errorcode;
 }
 
@@ -489,5 +501,5 @@ sub checksshserver {
 #Show a debugmessage if the debuglevel is high enough for this message
 sub debug {
 	my ($level, $message) = @_;
-	if($debuglevel >= $level) { say STDERR "DEBUG ($level): $message"; }
+	if($debuglevel >= $level) { say STDERR "DEBUG $level |$system|: $message"; }
 }
