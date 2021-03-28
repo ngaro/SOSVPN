@@ -118,13 +118,31 @@ sub waitforendofscreen {
 	}
 }
 
-#return the pass read from STDIN for user arg1 on host arg2
+#return the pass read from STDIN for user arg1 on host arg2, do not show asterisks if arg3 is defined
 sub readpass {
-	my ($user, $host) = @_;
-	ReadMode("noecho");
+	my ($user, $host, $hidden) = @_;
 	printf("Password for $user at $host: ");
-	my $pass = <>;
-	chomp $pass;
+	my $pass = "";
+	ReadMode("raw");
+	while(1) {
+		my $key = ReadKey;
+		if(ord($key) == 10) {
+			print "\n";
+			last;
+		} elsif(ord($key) == 8 || ord($key) == 127) {
+			if($pass eq "") { next; }
+			chop($pass);
+			unless(defined $hidden) { print "\b \b"; }
+		} elsif(ord($key) == 21) {
+			until($pass eq "") {
+				chop($pass);
+				unless(defined $hidden) { print "\b \b"; }
+			}
+		} else {
+			unless(defined $hidden) { print "*"; }
+			$pass .= $key;
+		}
+	}
 	ReadMode("restore");
 	return $pass;
 }
