@@ -381,13 +381,6 @@ sub showsettings {
 	debug(3, "client: " . Dumper($client));
 }
 
-#exec() with debugmessage
-sub debugexec {
-	my $command = join(" ", @_);
-	debug(2, "Now running '$command'. I won't return when this is finished.");
-	exec(@_);
-}
-
 #system() with debugmessage
 sub debugsystem {
 	my $command = join(" ", @_);
@@ -425,15 +418,16 @@ sub runasroot {
 		debug(1, "You need to be root to run this script. I'll change the user for you.");
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		my @argsaftersudo = ("$RealBin/$RealScript", "-o", $name, @ARGV);
+		my $systemline;
 		if(defined $onserver) {
 			my $pass = <STDIN>; chomp $pass;
 			debug(4, "Password of this user is |$pass|");
-			my $systemline="echo $pass | SUDO_ASKPASS='$echoscript' $sudo -A";
-			foreach(@argsaftersudo) { $systemline .= " $_"; }
-			exit debugsystem($systemline);
+			$systemline="echo $pass | SUDO_ASKPASS='$echoscript' $sudo -A";
 		} else {
-			debugexec($sudo, @argsaftersudo);
+			$systemline = $sudo;
 		}
+		foreach(@argsaftersudo) { $systemline .= " $_"; }
+		exit debugsystem($systemline);
 	}
 }
 
