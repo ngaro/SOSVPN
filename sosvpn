@@ -22,11 +22,15 @@ my $client = {
 	domains	=> [ "mylocal.net" ]
 };
 
+#Constants
 my $clientportforward = 22002;
 my $serverportforward = 22001;
 my $clientsession = "sosvpn";
 my $serverscriptlocation = "/tmp/sosvpn";
 my $clientlogfile = "/tmp/logfile";
+
+#Settings that can only be overwritten in code
+my $system = "Unknown (unknown)";
 
 
 ### Default settings ###
@@ -42,6 +46,7 @@ my $originaluser = undef;
 
 
 ### Main part of the program
+setsystemstring();
 runasroot();
 parseargs();
 my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve, $sudo, $scp); findprograms();
@@ -60,9 +65,21 @@ if($debuglevel > 3) { error("$debuglevel Quiting as requested because of high de
 
 ### Subroutine definitions
 
+sub setsystemstring {
+	if(defined $onserver) { $system =~ s/Unknown/Server/; } else { $system =~ s/Unknown/Client/; }
+	my $hostname = searchlocation("hostname");
+	if(defined $hostname) {
+		my $thishost = debugbackticks($hostname);
+		chomp $thishost;
+		$system =~ s/unknown/$thishost/;
+	} else {
+		debug(2, "'hostname' is not installed");
+	}
+}
+
 #Everything the code does when running as a server
 sub servercode {
-	say "TODO";
+	debug(0,"TODO");
 	exit;
 }
 
@@ -421,5 +438,5 @@ sub checksshserver {
 #Show a debugmessage if the debuglevel is high enough for this message
 sub debug {
 	my ($level, $message) = @_;
-	if($debuglevel >= $level) { say STDERR "DEBUG ($level): $message"; }
+	if($debuglevel >= $level) { say STDERR "DEBUG $level |$system|: $message"; }
 }
