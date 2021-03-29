@@ -46,9 +46,9 @@ my $originaluser = undef;
 
 
 ### Main part of the program
+parseargs();
 setsystemstring();
 runasroot();
-parseargs();
 my ($ssh, $screen, $socat, $iptables, $systemctl, $journalctl, $route, $systemdresolve, $sudo, $scp); findprograms();
 examinesystem();
 showsettings();
@@ -89,8 +89,10 @@ sub clientcode {
 	createscreen($clientsession);
 	screencommand($clientsession, 0, "logfile $clientlogfile.0");
 	screencommand($clientsession, 0, "log on");
-	my $commandinssh = "$serverscriptlocation --server";
-	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
+	my $commandinssh = $serverscriptlocation;
+	$ARGV[-1] = "--server";
+	foreach(@ARGV) { $commandinssh .= " $_"; }
+	#settings in $client en $server are not yet sent
 	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 	my $pass = readpass($server->{user}, $server->{host});
 	OUTERLOOP: while(1) {
@@ -285,45 +287,46 @@ sub findprograms {
 
 #Check if necessary args are given and use them to change the settings
 sub parseargs {
-	if($#ARGV == -1) { error("No arguments given. When running on the server you need (at least) --server-checkssh or --server. When running on the client you need (at least) the server to connect to"); }
-	while($#ARGV>=0) {
-		$_ = shift @ARGV;
+	my @argvcopy = @ARGV;
+	if($#argvcopy == -1) { error("No arguments given. When running on the server you need (at least) --server-checkssh or --server. When running on the client you need (at least) the server to connect to"); }
+	while($#argvcopy>=0) {
+		$_ = shift @argvcopy;
 		if(/^-p$/i or /^--port$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^\d+$/ or $ARGV[0] == 0 or $ARGV[0] > 65535) { error("No valid portnumber has been given to '-p' or '--port'"); }
-			$server->{sshport} = shift @ARGV;
+			if($#argvcopy < 0 or not $argvcopy[0] =~ /^\d+$/ or $argvcopy[0] == 0 or $argvcopy[0] > 65535) { error("No valid portnumber has been given to '-p' or '--port'"); }
+			$server->{sshport} = shift @argvcopy;
 		}
 		elsif(/^-d$/i or /^--server-dns$/i or /^--client-dns$/) {	#-d is short for--server-dns, -D is short for client-dns
-			if($#ARGV < 0) { error("No DNS-servers given to one of the dns-server options"); }
-			my $dnsservers = shift @ARGV;
+			if($#argvcopy < 0) { error("No DNS-servers given to one of the dns-server options"); }
+			my $dnsservers = shift @argvcopy;
 			unless($dnsservers =~ /^[\d\.,]+$/) { error("Incorrect format for the DNS-servers, provide them as IP's seperated by commas. Example: 8.8.4.4,8.8.8.8"); }
 			my @dnsservers = split(/,/, $dnsservers);
 			if($_ eq "-d" or /^--server-dns$/) { $server->{dnsservers} = \@dnsservers; } else { $client->{dnsservers} = \@dnsservers; }
 		}
 		elsif(/^-c$/i or /^--server-card$/i or /^--client-card$/) {	#-c is short for--server-card, -C is short for client-card
-			if($#ARGV < 0) { error("No networkcard given to one of the networkcard options"); }
-			my $card = shift @ARGV;
+			if($#argvcopy < 0) { error("No networkcard given to one of the networkcard options"); }
+			my $card = shift @argvcopy;
 			unless($card =~ /^\w+$/) { error("No valid networkcard has been given"); }
 			if($_ eq "-c" or /^--server-card$/) { $server->{card} = $card } else { $client->{card} = $card }
 		}
 		elsif(/^-g$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^[\d\.]+$/) { error("No gateway has been given"); }
-			$client->{gateway} = shift @ARGV;
+			if($#argvcopy < 0 or not $argvcopy[0] =~ /^[\d\.]+$/) { error("No gateway has been given"); }
+			$client->{gateway} = shift @argvcopy;
 		}
 		elsif(/^-o$/i or /^--original-user$/i) {
-			if($#ARGV < 0 or not $ARGV[0] =~ /^\w+$/) { error("The original username has not been given"); }
-			$originaluser = shift @ARGV;
+			if($#argvcopy < 0 or not $argvcopy[0] =~ /^\w+$/) { error("The original username has not been given"); }
+			$originaluser = shift @argvcopy;
 		}
 		elsif(/^-n$/i or /^--subnets$/i) {
-			if($#ARGV < 0) { error("No subnets given"); }
-			my $subnets = shift @ARGV;
+			if($#argvcopy < 0) { error("No subnets given"); }
+			my $subnets = shift @argvcopy;
 			unless($subnets =~ /^[\d\.\/,]+$/) { error("Incorrect format for the subnets, provide them as subnets seperated by commas. Example: 13.14.0.0/16,15.16.17.0/24"); }
 			my @subnets = split(/,/, $subnets);
 			$client->{subnets} = \@subnets;
 		}
-		elsif(/^-v$/i or /^--verbose$/) { $debuglevel++; }
+		elsif(/^-v$/ or /^--verbose$/i) { $debuglevel++; }
 		elsif(/^--server$/i) { $onserver = 1; }	#the presence of the '--server' option determines if we are running on the server or on the client system
 		elsif(/^--server-checkssh$/i) { $onserver = 1; $checkssh = 1; }	#the presence of the '--server-checkssh' option determines if we are still setting up the server locally
-		elsif($#ARGV == -1 and not defined $onserver) {
+		elsif($#argvcopy == -1 and not defined $onserver) {
 			if(/(.+)@(.+)/) { $server->{user} = $1; $server->{host} = $2; } else { $server->{host} = $_; }
 		}
 		else { error("'$_' is not a valid option"); }
@@ -376,7 +379,6 @@ sub runasroot {
 	$sudo = searchlocation("sudo");
 	if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
 	unless($< == 0) {
-		foreach(@ARGV) { if(/^-v$/i or /^--verbose$/) { $debuglevel++; } }	#this sub runs before checking the args (or we lose them and can't pass them to sudo) so we have to check for a -v here... 
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
