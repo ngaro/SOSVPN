@@ -26,6 +26,7 @@ my $clientportforward = 22002;
 my $serverportforward = 22001;
 my $clientsession = "sosvpn";
 my $serverscriptlocation = "/tmp/sosvpn";
+my $clientlogfile = "/tmp/logfile";
 
 
 ### Default settings ###
@@ -69,10 +70,24 @@ sub servercode {
 sub clientcode {
 	debugsystem("$scp $RealBin/$RealScript $server->{user}\@$server->{host}:$serverscriptlocation");
 	createscreen($clientsession);
+	screencommand($clientsession, 0, "logfile $clientlogfile.0");
+	screencommand($clientsession, 0, "log on");
 	my $commandinssh = "$serverscriptlocation --server";
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
 	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 	my $pass = readpass($server->{user}, $server->{host});
+	OUTERLOOP: while(1) {
+		open(my $fh, "$clientlogfile.0");
+		while(<$fh>) {
+			if(/^\s*\[sudo\]/) { close $fh; last OUTERLOOP; }
+		}
+		close $fh;
+	}
+	inputtoscreen($clientsession, 0, "$pass\n", "password");
+	if($debuglevel < 4) {
+		screencommand($clientsession, 0, "log off");
+		if($debuglevel < 3) { unlink("$clientlogfile.0"); }
+	}
 }
 
 #return the pass read from STDIN for user arg1 on host arg2, do not show asterisks if arg3 is defined
