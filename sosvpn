@@ -105,6 +105,13 @@ sub readpass {
 	return $pass;
 }
 
+#send a command (arg3) to a screen session (arg1) while on a window (arg2). This is not meant for sending input to whatever is running in that window
+sub screencommand {
+	my ($session, $window, $command) = @_;
+	debug(2, "Doing command '$command' on window $window of screen session '$session'");
+	unless(system("$screen -S $session -p $window -X $command") == 0) { error("Couldn't send '$command' to screen session '$session' when placing it on window $window"); }
+}
+
 #send input (arg3) to a window (arg2) of a screen session (arg1). If arg4 is defined a password is assumed and debug will only show the password if the debuglevel > 4
 sub inputtoscreen {
 	my ($session, $window, $input, $password) = @_;
