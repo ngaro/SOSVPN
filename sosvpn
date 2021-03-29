@@ -25,7 +25,7 @@ my $client = {
 #Constants
 my $clientportforward = 22002;
 my $serverportforward = 22001;
-my $clientsession = "sosvpn";
+my $clientsession = "sosvpnclient";
 my $serverscriptlocation = "/tmp/sosvpn";
 my $clientlogfile = "/tmp/logfile";
 
@@ -89,10 +89,9 @@ sub clientcode {
 	createscreen($clientsession);
 	screencommand($clientsession, 0, "logfile $clientlogfile.0");
 	screencommand($clientsession, 0, "log on");
-	my $commandinssh = $serverscriptlocation;
-	$ARGV[-1] = "--server";
-	foreach(@ARGV) { $commandinssh .= " $_"; }
-	#settings in $client en $server are not yet sent
+	my $commandinssh = "$serverscriptlocation --server";
+	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
+	for(my $i=0; $i < $debuglevel; $i++) { $commandinssh .= " -v"}
 	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 	my $pass = readpass($server->{user}, $server->{host});
 	OUTERLOOP: while(1) {
