@@ -106,7 +106,7 @@ sub parsefirstargs {
 #Everything the code does when running as a server
 sub servercode {
 	createscreen($serversession);
-	inputtoscreen($serversession, 0, "socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$virtnm,up\n");
+	inputtoscreen($serversession, 0, "$socat -d -d TCP-LISTEN:$serverportforward,reuseaddr TUN:$servervirtip/$virtnm,up\n");
 	screencommand($serversession, 0, "screen");
 	waitforendofscreen($serversession, 10);
 }
@@ -122,7 +122,7 @@ sub clientcode {
 	my $pass = readpass($server->{user}, $server->{host});
 	runinscreenwithouthistory($clientsession, 0, "echo $pass | $sudo -u $originaluser $ssh -T -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
 	screencommand($clientsession, 0, "screen");
-	inputtoscreen($clientsession, 1, "socat -d -d TCP:127.0.0.1:$clientportforward TUN:$clientvirtip/$virtnm,up\n");
+	inputtoscreen($clientsession, 1, "$socat -d -d TCP:127.0.0.1:$clientportforward TUN:$clientvirtip/$virtnm,up\n");
 	waitforendofscreen($clientsession, 10);
 }
 
