@@ -389,9 +389,7 @@ sub error {
 	my $error = shift;
 	my $errorcode = 1; my $errorstring = $error;
 	if($error=~/^(\d+)\s+(.*)/) { $errorcode = $1; $errorstring = $2 };
-	print STDERR "error";
-	unless($errorcode == 1) { print STDERR " (code $errorcode)"; }
-	print STDERR ": $errorstring\n";
+	say STDERR "ERROR $errorcode |$system|: $errorstring";
 	exit $errorcode;
 }
 
