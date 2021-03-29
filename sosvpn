@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
+use Term::ReadKey;
 use Data::Dumper; #For debugging
 
 
@@ -71,6 +72,37 @@ sub clientcode {
 	my $commandinssh = "$serverscriptlocation --server";
 	if(defined $server->{card}) { $commandinssh .= " --server-card $server->{card}"; }
 	inputtoscreen($clientsession, 0, "$sudo -u $originaluser $ssh -t -L $clientportforward:127.0.0.1:$serverportforward -p $server->{sshport} $server->{user}\@$server->{host} $commandinssh\n");
+	my $pass = readpass($server->{user}, $server->{host});
+}
+
+#return the pass read from STDIN for user arg1 on host arg2, do not show asterisks if arg3 is defined
+sub readpass {
+	my ($user, $host, $hidden) = @_;
+	printf("Password for $user at $host: ");
+	my $pass = "";
+	ReadMode("raw");
+	while(1) {
+		my $key = ReadKey;
+		if(ord($key) == 10) {
+			print "\n";
+			last;
+		} elsif(ord($key) == 8 || ord($key) == 127) {
+			if($pass eq "") { next; }
+			chop($pass);
+			unless(defined $hidden) { print "\b \b"; }
+		} elsif(ord($key) == 21) {
+			until($pass eq "") {
+				chop($pass);
+				unless(defined $hidden) { print "\b \b"; }
+			}
+		} else {
+			unless(defined $hidden) { print "*"; }
+			$pass .= $key;
+		}
+	}
+	ReadMode("restore");
+	debug(5, "Read password '$pass' for '$user' at $host'");
+	return $pass;
 }
 
 #send input (arg3) to a window (arg2) of a screen session (arg1)
