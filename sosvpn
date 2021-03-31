@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 use v5.16; use warnings; use strict;
 use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
+
 use Term::ReadKey;
 use Data::Dumper; #For debugging
 
@@ -309,8 +310,9 @@ sub parseargs {
 			if($_ eq "-c" or /^--server-card$/) { $server->{card} = $card } else { $client->{card} = $card }
 		}
 		elsif(/^-g$/i) {
-			if($#argvcopy < 0 or not $argvcopy[0] =~ /^[\d\.]+$/) { error("No gateway has been given"); }
+			if($#argvcopy < 0) { error("No gateway given to -g"); }
 			$client->{gateway} = shift @argvcopy;
+			unless($client->{gateway} =~ /^[\d\.]+$/) { error("Gateway should be provided as a IP address"); }
 		}
 		elsif(/^-o$/i or /^--original-user$/i) {
 			if($#argvcopy < 0 or not $argvcopy[0] =~ /^\w+$/) { error("The original username has not been given"); }
@@ -364,7 +366,6 @@ sub debugbackticks {
 	my $commandoutput = `$command`;
 	debug(1, "'$command' was started and it finished with returncode '$?'");
 	if($debuglevel >= 3) {
-		debug(3, "This was it's output:");
 		debug(3, "--- BEGIN OUTPUT '$command' ---");
 		foreach(split(/\n/, $commandoutput)) {
 			debug(3, "$_");
@@ -377,8 +378,10 @@ sub debugbackticks {
 #Restart the program as root if you are not root yet
 sub runasroot {
 	$sudo = searchlocation("sudo");
-	if(not defined $sudo) { error("'sudo' is not available. you'll have to find another way to become root and run this script."); }
-	unless($< == 0) {
+	if(not defined $sudo) { error("'sudo' is not available."); }
+	if($< == 0) {
+		debug(1, "You are now running as root");	#... so that we can send a debugmessage if requested
+	} else {
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
 		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
@@ -405,6 +408,7 @@ sub searchlocation {
 			return $test;
 		}
 	}
+	debug(4, "'$program' not found in \$PATH (Which is '$ENV{PATH}')");
 	return undef;
 }
 
