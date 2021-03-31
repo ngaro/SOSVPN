@@ -31,7 +31,7 @@ my $serverscriptlocation = "/tmp/sosvpn";
 my $clientlogfile = "/tmp/logfile";
 
 #Settings that can only be overwritten in code
-my $system = "Unknown (unknown)";
+my $system = "Unknown (unknown-user\@unknown-host)";
 
 
 ### Default settings ###
@@ -47,6 +47,8 @@ my $originaluser = undef;
 
 
 ### Main part of the program
+my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
+$system =~ s/unknown-user/$name/;
 parseargs();
 setsystemstring();
 runasroot();
@@ -70,11 +72,9 @@ sub setsystemstring {
 	if(defined $onserver) { $system =~ s/Unknown/Server/; } else { $system =~ s/Unknown/Client/; }
 	my $hostname = searchlocation("hostname");
 	if(defined $hostname) {
-		my $thishost = debugbackticks($hostname);
+		my $thishost = debugbackticks($hostname, 0);
 		chomp $thishost;
-		$system =~ s/unknown/$thishost/;
-	} else {
-		debug(2, "'hostname' is not installed");
+		$system =~ s/unknown-host/$thishost/;
 	}
 }
 
@@ -359,12 +359,13 @@ sub debugsystem {
 	return $returncode;
 }
 
-#Same as `` but with debugmessage
+#Same as `` but with debugmessage, if arg2 is defined it will crash unless the returncode equals this arg
 sub debugbackticks {
-	my $command = shift;
+	my $command = shift; my $wantedreturn = shift;
 	debug(2, "Now starting child '$command' and i will be using it's output. I'll tell you the returncode when it's finished.");
 	my $commandoutput = `$command`;
-	debug(1, "'$command' was started and it finished with returncode '$?'");
+	my $returncode = $?;
+	debug(1, "'$command' was started and it finished with returncode '$returncode'");
 	if($debuglevel >= 3) {
 		debug(3, "--- BEGIN OUTPUT '$command' ---");
 		foreach(split(/\n/, $commandoutput)) {
@@ -372,18 +373,17 @@ sub debugbackticks {
 		}
 		debug(3, "--- END OUTPUT '$command' ---");
 	}
+	if(defined $wantedreturn and $wantedreturn != $returncode) { error("The returncode $wantedreturn was expected from '$command', but the real one was $returncode");  }
 	return $commandoutput;
 }
 
 #Restart the program as root if you are not root yet
 sub runasroot {
-	$sudo = searchlocation("sudo");
-	if(not defined $sudo) { error("'sudo' is not available."); }
+	$sudo = searchlocation("sudo", "errordebian", "sudo");
 	if($< == 0) {
 		debug(1, "You are now running as root");	#... so that we can send a debugmessage if requested
 	} else {
 		debug(1, "You need to be root to run this script. I'll change the user for you.");	#... so that we can send a debugmessage if requested
-		my ($name, $passwd, $uid, $gid, $quota, $comment, $gcos, $dir, $shell) = getpwuid($<);
 		debugexec($sudo, "$RealBin/$RealScript", "-o", $name, @ARGV);
 	}
 }
@@ -398,7 +398,7 @@ sub error {
 	exit $errorcode;
 }
 
-#use $PATH to find the location of a program passed as argument
+#use $PATH to find the location of program1, if arg2 contains "error", if it also contains debian it will mention that package arg3 needs to be installed when on debian-based systems
 sub searchlocation {
 	my $program = shift;
 	foreach(split /:/, $ENV{PATH} ) {
@@ -408,7 +408,16 @@ sub searchlocation {
 			return $test;
 		}
 	}
-	debug(4, "'$program' not found in \$PATH (Which is '$ENV{PATH}')");
+	debug(2, "'$program' not found in \$PATH (Which is '$ENV{PATH}')");
+	$_ = shift(@_);
+	if(defined $_ and /error/i) {
+		if(/debian/i){
+			my $package=shift(@_);
+			error("Because we didn't find it in \$PATH, you'll probably still have to install '$program', on debian-based systems you can do this with 'apt-get install $package'");
+		} else {
+			error("'$program' is essential.");
+		}
+	}
 	return undef;
 }
 
