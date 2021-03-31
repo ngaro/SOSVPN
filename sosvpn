@@ -5,7 +5,6 @@ use FindBin qw($Bin $RealBin $RealScript); use lib "$Bin/../lib";
 use Term::ReadKey;
 use Data::Dumper; #For debugging
 
-
 ### Settings according to the example in README.md ###
 #( You don't want use these but you can leave them here for documentational purposes, they are overwritten in the next step)
 my $server = {
@@ -296,18 +295,18 @@ sub parseargs {
 			if($#argvcopy < 0 or not $argvcopy[0] =~ /^\d+$/ or $argvcopy[0] == 0 or $argvcopy[0] > 65535) { error("No valid portnumber has been given to '-p' or '--port'"); }
 			$server->{sshport} = shift @argvcopy;
 		}
-		elsif(/^-d$/i or /^--server-dns$/i or /^--client-dns$/) {	#-d is short for--server-dns, -D is short for client-dns
+		elsif(/^-d$/i or /^--server-dns$/i or /^--client-dns$/i) {	#-d is short for--server-dns, -D is short for client-dns
 			if($#argvcopy < 0) { error("No DNS-servers given to one of the dns-server options"); }
 			my $dnsservers = shift @argvcopy;
 			unless($dnsservers =~ /^[\d\.,]+$/) { error("Incorrect format for the DNS-servers, provide them as IP's seperated by commas. Example: 8.8.4.4,8.8.8.8"); }
 			my @dnsservers = split(/,/, $dnsservers);
-			if($_ eq "-d" or /^--server-dns$/) { $server->{dnsservers} = \@dnsservers; } else { $client->{dnsservers} = \@dnsservers; }
+			if($_ eq "-d" or /^--server-dns$/i) { $server->{dnsservers} = \@dnsservers; } else { $client->{dnsservers} = \@dnsservers; }
 		}
-		elsif(/^-c$/i or /^--server-card$/i or /^--client-card$/) {	#-c is short for--server-card, -C is short for client-card
+		elsif(/^-c$/i or /^--server-card$/i or /^--client-card$/i) {	#-c is short for--server-card, -C is short for client-card
 			if($#argvcopy < 0) { error("No networkcard given to one of the networkcard options"); }
 			my $card = shift @argvcopy;
 			unless($card =~ /^\w+$/) { error("No valid networkcard has been given"); }
-			if($_ eq "-c" or /^--server-card$/) { $server->{card} = $card } else { $client->{card} = $card }
+			if($_ eq "-c" or /^--server-card$/i) { $server->{card} = $card } else { $client->{card} = $card }
 		}
 		elsif(/^-g$/i) {
 			if($#argvcopy < 0) { error("No gateway given to -g"); }
@@ -398,7 +397,7 @@ sub error {
 	exit $errorcode;
 }
 
-#use $PATH to find the location of program1, if arg2 contains "error", if it also contains debian it will mention that package arg3 needs to be installed when on debian-based systems
+#use $PATH to find the location of program1, if arg2 contains "error", it will error instead of warn. If arg2 also contains debian it will mention that package arg3 needs to be installed when on debian-based systems
 sub searchlocation {
 	my $program = shift;
 	foreach(split /:/, $ENV{PATH} ) {
@@ -411,11 +410,12 @@ sub searchlocation {
 	debug(2, "'$program' not found in \$PATH (Which is '$ENV{PATH}')");
 	$_ = shift(@_);
 	if(defined $_ and /error/i) {
+		my $errorstring = "Because we didn't find it in \$PATH, you'll probably still have to install '$program'";
 		if(/debian/i){
 			my $package=shift(@_);
-			error("Because we didn't find it in \$PATH, you'll probably still have to install '$program', on debian-based systems you can do this with 'apt-get install $package'");
+			error("$errorstring, on debian-based systems you can do this with 'apt-get install $package'");
 		} else {
-			error("'$program' is essential.");
+			error($errorstring);
 		}
 	}
 	return undef;
